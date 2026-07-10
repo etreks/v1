@@ -1292,9 +1292,21 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
         const vtDate = new Date(vt.dateTimestamp);
         const vtDayIndex = vtDate.getDay();
 
+        // Calculate start of the week (Sunday) for vtDate
+        const startOfWeek = new Date(vtDate.getFullYear(), vtDate.getMonth(), vtDate.getDate());
+        startOfWeek.setDate(startOfWeek.getDate() - vtDayIndex);
+
         const daysHTML = displayDays.map((d, i) => {
           const isActive = activeDays.includes(dataDays[i]) || activeDays.includes(d);
-          const isPunched = isCompleted && i === vtDayIndex;
+          
+          // Get the actual date for this weekday index in the same week
+          const loopDate = new Date(startOfWeek.getTime());
+          loopDate.setDate(startOfWeek.getDate() + i);
+          const loopDateStr = dateToDateString(loopDate);
+          
+          // Check if it was completed on that day of the week
+          const isPunched = vt.originalTask.completions && vt.originalTask.completions.includes(loopDateStr);
+
           return `<div class="action-card-day${isActive ? ' active' : ''}${isPunched ? ' punched' : ''}" data-index="${i}" style="cursor:default;"><span>${d}</span></div>`;
         }).join('');
 
@@ -1367,6 +1379,11 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
 
             // Re-render sidebar immediately
             renderHistoryPanel();
+
+            // Quietly redraw logbook after the transition completes to update other days' punch cards
+            setTimeout(() => {
+              window.renderLogbook();
+            }, 350);
           }
         });
 
