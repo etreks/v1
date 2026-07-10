@@ -1856,11 +1856,11 @@ button:focus-visible {
   transition: opacity 0.2s ease;
 }
 
-.action-card.completed .action-card-day.punched {
+.action-card-day.punched {
   box-shadow: inset 0 4px 4px rgba(0, 0, 0, 0.25);
 }
 
-.action-card.completed .action-card-day.punched span {
+.action-card-day.punched span {
   opacity: 0;
 }
 
