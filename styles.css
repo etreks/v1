@@ -2114,3 +2114,307 @@ button:focus-visible {
 .gemini-origin-link svg {
   flex-shrink: 0;
 }
+
+/* Stats Header and Styling */
+.top-header {
+  justify-content: space-between;
+}
+
+.main-header-title {
+  font-family: 'Helvetica', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.stats-toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background-color 0.15s ease;
+  border-radius: 6px;
+}
+
+.stats-toggle-btn:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary);
+}
+
+.stats-toggle-btn.active {
+  color: #1882FF;
+}
+
+.stats-toggle-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Stats View Layout */
+.stats-state {
+  width: 100%;
+  max-width: var(--max-content-width);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 20px 0;
+  animation: slideUp 0.6s var(--transition-normal);
+}
+
+/* Hide scrollbar for stats container but keep functionality */
+.stats-state::-webkit-scrollbar {
+  width: 0px;
+  display: none;
+}
+
+.stats-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  width: 100%;
+}
+
+.stats-section-title {
+  font-family: 'Helvetica', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+/* Calendar Section Grid Carousel */
+.month-carousel-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  position: relative;
+}
+
+.carousel-arrow {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 24px;
+  color: var(--text-muted);
+  transition: color 0.2s;
+  padding: 10px;
+  user-select: none;
+}
+
+.carousel-arrow:hover {
+  color: var(--text-primary);
+}
+
+.month-carousel-viewport {
+  flex: 1;
+  display: flex;
+  gap: 20px;
+  overflow-x: hidden;
+  justify-content: flex-start;
+  scroll-behavior: smooth;
+}
+
+.month-block {
+  min-width: calc(33.333% - 14px);
+  max-width: calc(33.333% - 14px);
+  background-color: #FDF18C; /* Sleek yellow card theme background */
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.month-block-title {
+  font-family: 'Helvetica', -apple-system, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 0;
+  margin-bottom: 16px;
+  color: #373737;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px 4px;
+  text-align: center;
+}
+
+.calendar-header-day {
+  font-size: 10px;
+  font-weight: 600;
+  color: #373737;
+  opacity: 0.6;
+  margin-bottom: 8px;
+}
+
+.calendar-day-cell {
+  font-family: 'Helvetica', -apple-system, sans-serif;
+  font-size: 11px;
+  color: #373737;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  width: 24px;
+  margin: 0 auto;
+  border-radius: 50%;
+  position: relative;
+}
+
+.calendar-day-cell.empty {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.calendar-day-cell.active-commit {
+  background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  font-weight: 500;
+}
+
+.calendar-day-cell.punched-done {
+  box-shadow: inset 0 3px 3px rgba(0, 0, 0, 0.25);
+  background-color: transparent !important;
+  border: none !important;
+}
+
+.calendar-day-cell.punched-done span {
+  opacity: 0 !important;
+}
+
+/* History Chart Section */
+.history-card {
+  background-color: #FDF18C;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  width: 100%;
+}
+
+.chart-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  height: 200px;
+  padding-top: 20px;
+  padding-bottom: 10px;
+  position: relative;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.15);
+}
+
+.chart-bar-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 60px;
+}
+
+.chart-bar-value {
+  font-family: 'Helvetica', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #373737;
+}
+
+.chart-bar {
+  width: 6px;
+  background-color: #373737;
+  border-radius: 3px 3px 0 0;
+  height: 0;
+  transition: height 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.chart-bar::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  background-color: #373737;
+  border-radius: 50%;
+}
+
+.chart-bar-label {
+  font-family: 'Helvetica', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #373737;
+}
+
+/* Evolvement Timeline Section */
+.evolvement-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  position: relative;
+  padding-left: 20px;
+  margin-top: 10px;
+}
+
+.evolvement-timeline::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 15px;
+  bottom: 15px;
+  width: 2px;
+  border-left: 2px dotted var(--border-color);
+}
+
+.timeline-item {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+  position: relative;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -20px;
+  top: 12px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: #373737;
+  border: 3px solid var(--bg-primary);
+  z-index: 1;
+}
+
+.timeline-item:first-child .timeline-marker {
+  background-color: #1882FF; /* Highlight the latest active one */
+}
+
+.timeline-item:last-child .timeline-marker {
+  background-color: #777777;
+}
+
+.timeline-card-col {
+  flex: 1;
+  max-width: 320px;
+}
+
+.timeline-calendar-col {
+  flex: 2;
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+}
+
+.timeline-calendar-col .month-block {
+  min-width: 180px;
+  max-width: 180px;
+}

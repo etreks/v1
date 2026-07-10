@@ -67,6 +67,16 @@
     <div class="main-wrapper">
       <header class="top-header">
         <div class="header-left">
+          <span id="main-header-title" class="main-header-title"></span>
+        </div>
+        <div class="header-right">
+          <button id="toggle-stats-btn" class="stats-toggle-btn" aria-label="View Stats" title="Toggle Stats" style="display: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+          </button>
         </div>
       </header>
 
@@ -124,6 +134,41 @@
           </div>
           <div class="logbook-content" id="logbook-content">
             <!-- Logbook cards rendered here by JS -->
+          </div>
+        </section>
+
+        <!-- Stats View Section -->
+        <section class="stats-state" id="stats-state" style="display: none;">
+          <div class="stats-wrapper">
+            <!-- Calendar Section -->
+            <div class="stats-calendar-section">
+              <h2 class="stats-section-title">Calendar</h2>
+              <div class="month-carousel-container">
+                <button class="carousel-arrow left-arrow" id="month-prev-btn">&lt;</button>
+                <div class="month-carousel-viewport" id="month-carousel-viewport">
+                  <!-- Monthly grids populated dynamically -->
+                </div>
+                <button class="carousel-arrow right-arrow" id="month-next-btn">&gt;</button>
+              </div>
+            </div>
+
+            <!-- History Section -->
+            <div class="stats-history-section">
+              <h2 class="stats-section-title">History</h2>
+              <div class="history-card">
+                <div class="chart-container" id="history-chart-container">
+                  <!-- Dynamic bar chart -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Evolvement Timeline Section -->
+            <div class="stats-evolvement-section">
+              <h2 class="stats-section-title">Action card History and Evolvement</h2>
+              <div class="evolvement-timeline" id="evolvement-timeline">
+                <!-- Timeline elements -->
+              </div>
+            </div>
           </div>
         </section>
       </main>

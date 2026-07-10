@@ -19,12 +19,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const landingForm = document.getElementById('landing-form');
   const feelingInput = document.getElementById('feeling-input');
 
+  const toggleStatsBtn = document.getElementById('toggle-stats-btn');
+  const statsState = document.getElementById('stats-state');
+  let currentMonthIndex = 0;
+
   const openLogbookBtn = document.getElementById('open-logbook-btn');
   if (openLogbookBtn) {
     openLogbookBtn.addEventListener('click', () => {
     landingState.style.display = 'none';
     chatState.style.display = 'none';
+    if (statsState) statsState.style.display = 'none';
     logbookState.style.display = 'block';
+
+    if (toggleStatsBtn) {
+      toggleStatsBtn.style.display = 'none';
+      toggleStatsBtn.classList.remove('active');
+    }
 
     if (mainHeaderTitle) {
       mainHeaderTitle.style.display = 'none';
@@ -632,6 +642,9 @@ document.addEventListener('DOMContentLoaded', () => {
           editBtn.title = 'Save changes';
         } else {
           // Save & lock
+          const oldCopy = { ...cardData };
+          delete oldCopy.history; // Avoid circular reference nesting
+
           card.querySelectorAll('.action-card-time-pill, .action-card-location').forEach(el => {
             el.contentEditable = 'false';
             const field = el.dataset.field;
@@ -644,6 +657,20 @@ document.addEventListener('DOMContentLoaded', () => {
           const newTitle = card.querySelector('.action-card-title').textContent.trim();
           cardData.title = newTitle;
           card.querySelector('.action-card-title').contentEditable = 'false';
+
+          // Initialize history tracking if missing
+          if (!cardData.history) cardData.history = [];
+          const lastEditTime = cardData.lastEditTime || messageObj.timestamp;
+          
+          // Push previous version snapshot to history
+          cardData.history.push({
+            cardData: oldCopy,
+            dateRange: {
+              start: lastEditTime,
+              end: Date.now()
+            }
+          });
+          cardData.lastEditTime = Date.now();
 
           // Sync title changes directly to active session object and header
           if (activeSessionId && chatSessions[activeSessionId]) {
@@ -920,8 +947,14 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
     activeSessionId = null;
     chatState.style.display = 'none';
     if (logbookState) logbookState.style.display = 'none';
+    if (statsState) statsState.style.display = 'none';
     landingState.style.display = 'flex';
     feelingInput.value = '';
+
+    if (toggleStatsBtn) {
+      toggleStatsBtn.style.display = 'none';
+      toggleStatsBtn.classList.remove('active');
+    }
 
     if (openLogbookBtn) openLogbookBtn.classList.remove('active');
 
@@ -1179,7 +1212,13 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
     
     landingState.style.display = 'none';
     if (logbookState) logbookState.style.display = 'none';
+    if (statsState) statsState.style.display = 'none';
     chatState.style.display = 'flex';
+
+    if (toggleStatsBtn) {
+      toggleStatsBtn.style.display = 'flex';
+      toggleStatsBtn.classList.remove('active');
+    }
 
     // Derive display title using the same priority as the sidebar
     const actionMsg = session.messages.find(m => m.actionCardData);
@@ -1399,6 +1438,402 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
       groupDiv.appendChild(gridDiv);
       logbookContent.appendChild(groupDiv);
     });
+  }
+
+  // --- Stats Toggle Listener & Rendering Logic ---
+  if (toggleStatsBtn) {
+    toggleStatsBtn.addEventListener('click', () => {
+      if (!statsState) return;
+      const isStatsOpen = statsState.style.display === 'block';
+      if (isStatsOpen) {
+        // Switch back to Chat
+        statsState.style.display = 'none';
+        chatState.style.display = 'flex';
+        toggleStatsBtn.classList.remove('active');
+      } else {
+        // Switch to Stats
+        chatState.style.display = 'none';
+        statsState.style.display = 'block';
+        toggleStatsBtn.classList.add('active');
+        renderStats();
+      }
+    });
+  }
+
+  function renderStats() {
+    if (!statsState) return;
+
+    // Load active task
+    const savedTasks = JSON.parse(localStorage.getItem('selahe_tasks')) || [];
+    const activeTask = savedTasks.find(t => t.sessionId === activeSessionId);
+
+    const statsWrapper = statsState.querySelector('.stats-wrapper');
+    if (!activeTask) {
+      statsWrapper.innerHTML = `
+        <div style="color:var(--text-muted); font-size:14px; text-align:center; padding: 60px 20px;">
+          No active action card found for this chat. Create and save an action card to view statistics.
+        </div>
+      `;
+      return;
+    }
+
+    // Restore the standard stats layout if a task exists
+    statsWrapper.innerHTML = `
+      <!-- Calendar Section -->
+      <div class="stats-calendar-section">
+        <h2 class="stats-section-title">Calendar</h2>
+        <div class="month-carousel-container">
+          <button class="carousel-arrow left-arrow" id="month-prev-btn">&lt;</button>
+          <div class="month-carousel-viewport" id="month-carousel-viewport">
+            <!-- Monthly grids populated dynamically -->
+          </div>
+          <button class="carousel-arrow right-arrow" id="month-next-btn">&gt;</button>
+        </div>
+      </div>
+
+      <!-- History Section -->
+      <div class="stats-history-section">
+        <h2 class="stats-section-title">History</h2>
+        <div class="history-card">
+          <div class="chart-container" id="history-chart-container">
+            <!-- Dynamic bar chart -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Evolvement Timeline Section -->
+      <div class="stats-evolvement-section">
+        <h2 class="stats-section-title">Action card History and Evolvement</h2>
+        <div class="evolvement-timeline" id="evolvement-timeline">
+          <!-- Timeline elements -->
+        </div>
+      </div>
+    `;
+
+    // Rebind navigation buttons
+    const monthPrevBtn = document.getElementById('month-prev-btn');
+    const monthNextBtn = document.getElementById('month-next-btn');
+    if (monthPrevBtn) {
+      monthPrevBtn.addEventListener('click', () => {
+        currentMonthIndex--;
+        renderStatsCalendar(activeTask);
+      });
+    }
+    if (monthNextBtn) {
+      monthNextBtn.addEventListener('click', () => {
+        currentMonthIndex++;
+        renderStatsCalendar(activeTask);
+      });
+    }
+
+    // Render components
+    renderStatsCalendar(activeTask);
+    renderStatsChart(activeTask);
+    renderStatsEvolvement(activeTask);
+  }
+
+  function renderStatsCalendar(task) {
+    const viewport = document.getElementById('month-carousel-viewport');
+    if (!viewport) return;
+    viewport.innerHTML = '';
+
+    const today = new Date();
+    const monthsToRender = [-1, 0, 1]; // Left, Middle, Right months
+
+    monthsToRender.forEach(offset => {
+      const baseDate = new Date();
+      // Adjust year/month based on currentMonthIndex + offset
+      baseDate.setMonth(baseDate.getMonth() + currentMonthIndex + offset);
+      
+      const year = baseDate.getFullYear();
+      const month = baseDate.getMonth();
+      const monthName = baseDate.toLocaleString('default', { month: 'long' });
+      
+      const monthBlock = document.createElement('div');
+      monthBlock.classList.add('month-block');
+      
+      const title = document.createElement('h3');
+      title.classList.add('month-block-title');
+      title.textContent = `${monthName}`;
+      monthBlock.appendChild(title);
+      
+      const grid = document.createElement('div');
+      grid.classList.add('calendar-grid');
+      
+      // Headers
+      const weekHeaders = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+      weekHeaders.forEach(wh => {
+        const headerEl = document.createElement('div');
+        headerEl.classList.add('calendar-header-day');
+        headerEl.textContent = wh;
+        grid.appendChild(headerEl);
+      });
+      
+      // Spacers
+      const firstDay = new Date(year, month, 1);
+      const firstDayIndex = firstDay.getDay();
+      for (let i = 0; i < firstDayIndex; i++) {
+        const spacer = document.createElement('div');
+        spacer.classList.add('calendar-day-cell', 'empty');
+        grid.appendChild(spacer);
+      }
+      
+      // Days of the month
+      const numDays = new Date(year, month + 1, 0).getDate();
+      for (let d = 1; d <= numDays; d++) {
+        const cell = document.createElement('div');
+        cell.classList.add('calendar-day-cell');
+        
+        const span = document.createElement('span');
+        span.textContent = d;
+        cell.appendChild(span);
+        
+        const cellDate = new Date(year, month, d);
+        const cellDateStr = dateToDateString(cellDate);
+        
+        const isCompleted = task.completions && task.completions.includes(cellDateStr);
+        
+        const dayOfWeekIndex = cellDate.getDay();
+        const weekDaysMap = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+        const dayOfWeekStr = weekDaysMap[dayOfWeekIndex];
+        const isWeekdayActive = task.cardData.days && task.cardData.days.includes(dayOfWeekStr);
+        
+        const taskCreatedDate = new Date(task.date || Date.now());
+        const compareDate = new Date(year, month, d);
+        const createdMidnight = new Date(taskCreatedDate.getFullYear(), taskCreatedDate.getMonth(), taskCreatedDate.getDate());
+        const isAfterCreation = compareDate >= createdMidnight;
+        
+        if (isCompleted) {
+          cell.classList.add('punched-done');
+        } else if (isAfterCreation && isWeekdayActive) {
+          const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          if (compareDate >= todayMidnight) {
+            cell.classList.add('active-commit');
+          }
+        }
+        
+        grid.appendChild(cell);
+      }
+      
+      monthBlock.appendChild(grid);
+      viewport.appendChild(monthBlock);
+    });
+  }
+
+  function renderStatsChart(task) {
+    const container = document.getElementById('history-chart-container');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    // Previous two months and current month
+    const months = [];
+    for (let i = -2; i <= 0; i++) {
+      const d = new Date();
+      d.setMonth(d.getMonth() + i);
+      months.push({
+        year: d.getFullYear(),
+        month: d.getMonth(),
+        label: d.toLocaleString('default', { month: 'long' }),
+        prefix: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      });
+    }
+    
+    // Calculate counts
+    const completions = task.completions || [];
+    let maxCount = 1;
+    months.forEach(m => {
+      m.count = completions.filter(c => c.startsWith(m.prefix)).length;
+      if (m.count > maxCount) maxCount = m.count;
+    });
+    
+    // Render bars
+    months.forEach(m => {
+      const barWrapper = document.createElement('div');
+      barWrapper.classList.add('chart-bar-wrapper');
+      
+      const value = document.createElement('span');
+      value.classList.add('chart-bar-value');
+      value.textContent = m.count;
+      barWrapper.appendChild(value);
+      
+      const bar = document.createElement('div');
+      bar.classList.add('chart-bar');
+      const height = (m.count / maxCount) * 120;
+      barWrapper.appendChild(bar);
+      
+      const label = document.createElement('span');
+      label.classList.add('chart-bar-label');
+      label.textContent = m.label;
+      barWrapper.appendChild(label);
+      
+      container.appendChild(barWrapper);
+      
+      setTimeout(() => {
+        bar.style.height = `${height}px`;
+      }, 50);
+    });
+  }
+
+  function renderStatsEvolvement(task) {
+    const timeline = document.getElementById('evolvement-timeline');
+    if (!timeline) return;
+    timeline.innerHTML = '';
+
+    const historyList = [];
+
+    // 1. Current Active Version
+    historyList.push({
+      cardData: task.cardData,
+      activeRange: {
+        start: task.lastEditTime || task.date || Date.now(),
+        end: Date.now()
+      },
+      isLatest: true
+    });
+
+    // 2. Historical Versions
+    if (task.cardData.history && Array.isArray(task.cardData.history)) {
+      const reversedHistory = [...task.cardData.history].reverse();
+      reversedHistory.forEach(h => {
+        historyList.push({
+          cardData: h.cardData,
+          activeRange: h.dateRange,
+          isLatest: false
+        });
+      });
+    }
+
+    // 3. Render Timeline Items
+    historyList.forEach(item => {
+      const itemEl = document.createElement('div');
+      itemEl.classList.add('timeline-item');
+
+      const marker = document.createElement('div');
+      marker.classList.add('timeline-marker');
+      itemEl.appendChild(marker);
+
+      // Card Preview Column
+      const cardCol = document.createElement('div');
+      cardCol.classList.add('timeline-card-col');
+      cardCol.innerHTML = renderEvolvementCard(item.cardData);
+      itemEl.appendChild(cardCol);
+
+      // Calendars Column
+      const calCol = document.createElement('div');
+      calCol.classList.add('timeline-calendar-col');
+
+      const startD = new Date(item.activeRange.start);
+      const endD = new Date(item.activeRange.end);
+
+      let cur = new Date(startD.getFullYear(), startD.getMonth(), 1);
+      const last = new Date(endD.getFullYear(), endD.getMonth(), 1);
+
+      while (cur <= last) {
+        calCol.innerHTML += renderMiniCalendarHTML(cur.getFullYear(), cur.getMonth(), task, item.activeRange);
+        cur.setMonth(cur.getMonth() + 1);
+      }
+
+      itemEl.appendChild(calCol);
+      timeline.appendChild(itemEl);
+    });
+  }
+
+  function renderEvolvementCard(cardData) {
+    const title = cardData.title || 'Gym';
+    const timeStart = cardData.timeStart || '06:30';
+    const timeStartAmPm = cardData.timeStartAmPm || 'pm';
+    const timeEnd = cardData.timeEnd || '07:30';
+    const timeEndAmPm = cardData.timeEndAmPm || 'pm';
+    const location = cardData.location || 'JMD Gym';
+    const duration = cardData.duration || '1h';
+    const activeDays = cardData.days || [];
+    const why = cardData.why || '';
+
+    const displayDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    const dataDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+    const daysHTML = displayDays.map((d, i) => {
+      const isActive = activeDays.includes(dataDays[i]);
+      return `<div class="action-card-day${isActive ? ' active' : ''}" style="cursor:default;"><span>${d}</span></div>`;
+    }).join('');
+
+    return `
+      <div class="action-card card-blue" style="cursor:default; margin:0; pointer-events:none;">
+        <div class="action-card-header">
+          <div class="action-card-title">${title}</div>
+          <div class="status-circle" style="width:16px; height:16px; border-radius:50%; background-color:#373737; opacity:0.3;"></div>
+        </div>
+        <div class="action-card-time-row">
+          <div class="action-card-time-pill">${timeStart}</div>
+          <div class="action-card-time-pill">${timeStartAmPm}</div>
+          <span style="color:#373737; opacity:0.4;">-</span>
+          <div class="action-card-time-pill">${timeEnd}</div>
+          <div class="action-card-time-pill">${timeEndAmPm}</div>
+        </div>
+        <div class="action-card-details">
+          <span class="action-card-location">${location}</span>
+          <span class="action-card-bullet">•</span>
+          <span class="action-card-duration">${duration}</span>
+        </div>
+        <div class="action-card-days">
+          ${daysHTML}
+        </div>
+        <div class="action-card-why">
+          <div class="action-card-why-label" style="font-size: 11px;">Why?</div>
+          <div class="action-card-why-text" style="font-size: 11px;">${why}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderMiniCalendarHTML(year, month, task, activeRange) {
+    const baseDate = new Date(year, month, 1);
+    const monthName = baseDate.toLocaleString('default', { month: 'long' });
+    
+    const weekHeaders = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    const headersHTML = weekHeaders.map(wh => `<div class="calendar-header-day">${wh}</div>`).join('');
+    
+    const firstDayIndex = baseDate.getDay();
+    let daysHTML = '';
+    for (let i = 0; i < firstDayIndex; i++) {
+      daysHTML += `<div class="calendar-day-cell empty"></div>`;
+    }
+    
+    const numDays = new Date(year, month + 1, 0).getDate();
+    for (let d = 1; d <= numDays; d++) {
+      const cellDate = new Date(year, month, d);
+      const cellDateStr = dateToDateString(cellDate);
+      
+      const startOfDay = new Date(year, month, d).getTime();
+      const endOfDay = new Date(year, month, d, 23, 59, 59, 999).getTime();
+      const isWithinRange = endOfDay >= activeRange.start && startOfDay <= activeRange.end;
+      
+      const isCompleted = task.completions && task.completions.includes(cellDateStr) && isWithinRange;
+      
+      const dayOfWeekIndex = cellDate.getDay();
+      const weekDaysMap = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+      const dayOfWeekStr = weekDaysMap[dayOfWeekIndex];
+      const isWeekdayActive = task.cardData.days && task.cardData.days.includes(dayOfWeekStr);
+      
+      let classes = '';
+      if (isCompleted) {
+        classes = ' punched-done';
+      } else if (isWithinRange && isWeekdayActive) {
+        classes = ' active-commit';
+      }
+      
+      daysHTML += `<div class="calendar-day-cell${classes}"><span>${d}</span></div>`;
+    }
+    
+    return `
+      <div class="month-block">
+        <h3 class="month-block-title" style="font-size: 13px; margin-bottom: 12px; color: #373737;">${monthName}</h3>
+        <div class="calendar-grid" style="gap: 4px 2px;">
+          ${headersHTML}
+          ${daysHTML}
+        </div>
+      </div>
+    `;
   }
 
   // Document click listener to close dropdowns
