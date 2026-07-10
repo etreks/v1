@@ -706,7 +706,8 @@ document.addEventListener('DOMContentLoaded', () => {
             cardData: cardData,
             date: Date.now(),
             sessionId: activeSessionId,
-            cardId: messageObj.timestamp // Lock logbook task to this specific chat message card
+            cardId: messageObj.timestamp, // Lock logbook task to this specific chat message card
+            completions: [] // Initialize completions array
           });
           localStorage.setItem('selahe_tasks', JSON.stringify(savedTasks));
 
@@ -929,71 +930,149 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
   }
 
   // --- Sidebar Session Panel Functions ---
+  function dateToDateString(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  function isTaskActiveOnDate(task, date) {
+    if (!task.cardData || !task.cardData.days) return false;
+    
+    // Check if the date is before the task's creation date (we don't show history before creation)
+    const taskCreatedDate = new Date(task.date || Date.now());
+    // Normalize to midnight for comparison
+    const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const createdMidnight = new Date(taskCreatedDate.getFullYear(), taskCreatedDate.getMonth(), taskCreatedDate.getDate());
+    if (compareDate < createdMidnight) return false;
+
+    const displayDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    const dataDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+    
+    const dayOfWeekIndex = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const displayDay = displayDays[dayOfWeekIndex];
+    const dataDay = dataDays[dayOfWeekIndex];
+    
+    return task.cardData.days.includes(displayDay) || task.cardData.days.includes(dataDay);
+  }
+
+  function getVirtualTasks() {
+    const savedTasks = JSON.parse(localStorage.getItem('selahe_tasks')) || [];
+    if (savedTasks.length === 0) return [];
+
+    let hasMigration = false;
+
+    // Perform migrations in-place for any missing completions array
+    savedTasks.forEach(task => {
+      if (!task.completions) {
+        task.completions = [];
+        if (task.cardData && task.cardData.status === 'completed') {
+          const d = new Date(task.date || Date.now());
+          task.completions.push(dateToDateString(d));
+        }
+        hasMigration = true;
+      }
+    });
+
+    if (hasMigration) {
+      localStorage.setItem('selahe_tasks', JSON.stringify(savedTasks));
+    }
+
+    // Find the oldest task date
+    let oldestTimestamp = Date.now();
+    savedTasks.forEach(t => {
+      if (t.date && t.date < oldestTimestamp) {
+        oldestTimestamp = t.date;
+      }
+    });
+
+    const startDate = new Date(oldestTimestamp);
+    startDate.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const virtualTasks = [];
+
+    // Loop from startDate to today (inclusive)
+    let currentDate = new Date(startDate.getTime());
+    while (currentDate <= today) {
+      const dateStr = dateToDateString(currentDate);
+      
+      savedTasks.forEach(task => {
+        if (isTaskActiveOnDate(task, currentDate)) {
+          const isCompleted = task.completions && task.completions.includes(dateStr);
+          virtualTasks.push({
+            taskId: task.id,
+            sessionId: task.sessionId,
+            text: task.text,
+            cardData: {
+              ...task.cardData,
+              status: isCompleted ? 'completed' : 'pending'
+            },
+            dateStr: dateStr,
+            dateTimestamp: currentDate.getTime(),
+            isCompleted: isCompleted,
+            originalTask: task
+          });
+        }
+      });
+
+      // Move to next day
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return virtualTasks;
+  }
+
   function renderHistoryPanel() {
     if (!historyListContainer) return;
     historyListContainer.innerHTML = '';
 
-    // The source of truth for pinned chats is the logbook
-    const savedTasks = JSON.parse(localStorage.getItem('selahe_tasks')) || [];
-    
-    // Build a map of session id -> latest action title and status
-    const sessionMap = {};
-    savedTasks.forEach(task => {
-      if (task.sessionId && chatSessions[task.sessionId]) {
-        // keep updating so the last one processed is the most recent
-        sessionMap[task.sessionId] = {
-          title: task.cardData.title || 'Course of Action',
-          status: task.cardData.status || 'pending'
-        };
-      }
-    });
-
-    const actionSessions = Object.keys(sessionMap).map(key => {
-      const session = chatSessions[key];
-      return {
-        id: session.id,
-        date: parseInt(session.id.split('_')[1]),
-        actionTitle: sessionMap[key].title,
-        status: sessionMap[key].status
-      };
-    }).sort((a, b) => b.date - a.date);
-
-    if (actionSessions.length === 0) {
+    const virtualTasks = getVirtualTasks();
+    if (virtualTasks.length === 0) {
       historyListContainer.innerHTML = '<div class="history-empty">No saved chats yet. Generate and save an action card to start your ledger.</div>';
       return;
     }
 
     const grouped = {};
-    actionSessions.forEach(session => {
-      const d = new Date(session.date);
+    
+    // Sort virtual tasks descending by date
+    virtualTasks.sort((a, b) => b.dateTimestamp - a.dateTimestamp);
+
+    virtualTasks.forEach(vt => {
+      const d = new Date(vt.dateTimestamp);
       const day = d.getDate();
       const month = d.toLocaleString('default', { month: 'long' });
       const weekday = d.toLocaleString('default', { weekday: 'long' });
-      const dateStr = `${day} ${month}, ${weekday}`;
+      const dateHeaderStr = `${day} ${month}, ${weekday}`;
 
-      if (!grouped[dateStr]) grouped[dateStr] = [];
-      grouped[dateStr].push(session);
+      if (!grouped[dateHeaderStr]) grouped[dateHeaderStr] = [];
+      grouped[dateHeaderStr].push(vt);
     });
 
-    Object.keys(grouped).forEach(dateStr => {
+    Object.keys(grouped).forEach(dateHeaderStr => {
       const dateHeader = document.createElement('div');
       dateHeader.classList.add('history-date-header');
-      dateHeader.textContent = dateStr;
+      dateHeader.textContent = dateHeaderStr;
       historyListContainer.appendChild(dateHeader);
 
-      grouped[dateStr].forEach(session => {
+      grouped[dateHeaderStr].forEach(vt => {
         const item = document.createElement('div');
         item.classList.add('history-item');
-        if (activeSessionId === session.id) item.classList.add('active');
+        if (activeSessionId === vt.sessionId) item.classList.add('active');
 
-        item.addEventListener('click', () => restoreSession(session.id));
+        item.addEventListener('click', () => {
+          if (vt.sessionId) restoreSession(vt.sessionId);
+        });
 
-        const d = new Date(session.date);
+        const d = new Date(vt.dateTimestamp);
         const today = new Date();
         const isToday = d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
         
         let dotColor = '#FFE100'; // Yellow (pending today)
-        if (session.status === 'completed') {
+        if (vt.isCompleted) {
           dotColor = '#1882FF'; // Blue (completed)
         } else if (!isToday) {
           dotColor = '#FF612A'; // Orange (past due)
@@ -1002,14 +1081,13 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
         const innerWrapper = document.createElement('div');
         innerWrapper.style.display = 'flex';
         innerWrapper.style.alignItems = 'center';
-        innerWrapper.style.gap = '12px'; // Adjusted gap for tighter Figma mockup look
+        innerWrapper.style.gap = '12px';
         innerWrapper.style.flex = '1';
         innerWrapper.style.minWidth = '0';
 
         const dot = document.createElement('div');
         dot.classList.add('history-dot');
         dot.style.backgroundColor = dotColor;
-        // make sure the dot stands out a bit
         dot.style.width = '12px';
         dot.style.height = '12px';
         dot.style.borderRadius = '50%';
@@ -1018,7 +1096,7 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
 
         const titleSpan = document.createElement('span');
         titleSpan.classList.add('history-item-title');
-        titleSpan.textContent = session.actionTitle;
+        titleSpan.textContent = vt.cardData.title || 'Course of Action';
         innerWrapper.appendChild(titleSpan);
 
         item.appendChild(innerWrapper);
@@ -1036,15 +1114,27 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
         renameOpt.addEventListener('click', (e) => {
           e.stopPropagation();
           dropdown.classList.remove('show');
-          const newName = prompt('Enter new name for the chat:', session.actionTitle);
+          const newName = prompt('Rename this action card:', vt.cardData.title);
           if (newName && newName.trim()) {
-            session.actionTitle = newName.trim();
-            chatSessions[session.id].actionTitle = newName.trim(); // Update the actual persistent session object!
-            titleSpan.textContent = newName.trim();
-            if (activeSessionId === session.id && mainHeaderTitle) {
-              mainHeaderTitle.textContent = newName.trim();
+            const trimmedName = newName.trim();
+            if (vt.sessionId && chatSessions[vt.sessionId]) {
+              chatSessions[vt.sessionId].actionTitle = trimmedName;
+              chatSessions[vt.sessionId].title = trimmedName;
+              syncSessionsToServer();
             }
-            syncSessionsToServer();
+            let savedTasks = JSON.parse(localStorage.getItem('selahe_tasks')) || [];
+            const taskIndex = savedTasks.findIndex(t => t.id === vt.taskId);
+            if (taskIndex !== -1) {
+              savedTasks[taskIndex].cardData.title = trimmedName;
+              localStorage.setItem('selahe_tasks', JSON.stringify(savedTasks));
+            }
+            if (activeSessionId === vt.sessionId && mainHeaderTitle) {
+              mainHeaderTitle.textContent = trimmedName;
+            }
+            renderHistoryPanel();
+            if (logbookState && logbookState.style.display === 'block') {
+              window.renderLogbook();
+            }
           }
         });
 
@@ -1055,7 +1145,7 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
           e.stopPropagation();
           dropdown.classList.remove('show');
           if (confirm('Are you sure you want to delete this chat session?')) {
-            deleteSession(session.id);
+            deleteSession(vt.sessionId);
           }
         });
 
@@ -1139,23 +1229,27 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
     if (!logbookContent) return;
     logbookContent.innerHTML = '';
 
-    let taskList = JSON.parse(localStorage.getItem('selahe_tasks')) || [];
-    const logbookTasks = taskList.filter(t => t.cardData);
+    const virtualTasks = getVirtualTasks();
 
-    if (logbookTasks.length === 0) {
+    if (virtualTasks.length === 0) {
       logbookContent.innerHTML = '<div style="color:var(--text-muted); font-size:14px;">No action cards saved yet. Generate one in chat and click the + icon to add it.</div>';
       return;
     }
 
     const grouped = {};
-    logbookTasks.forEach(task => {
-      const d = new Date(task.date || Date.now());
+    
+    // Sort descending by date
+    virtualTasks.sort((a, b) => b.dateTimestamp - a.dateTimestamp);
+
+    virtualTasks.forEach(vt => {
+      const d = new Date(vt.dateTimestamp);
       const day = d.getDate();
       const month = d.toLocaleString('default', { month: 'long' });
       const weekday = d.toLocaleString('default', { weekday: 'long' });
       const dateStr = `${day} ${month}, ${weekday}`;
+      
       if (!grouped[dateStr]) grouped[dateStr] = [];
-      grouped[dateStr].push(task);
+      grouped[dateStr].push(vt);
     });
 
     Object.keys(grouped).forEach(dateStr => {
@@ -1178,9 +1272,9 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
       const gridDiv = document.createElement('div');
       gridDiv.classList.add('logbook-grid');
 
-      grouped[dateStr].forEach(task => {
-        const cardData = task.cardData;
-        const isCompleted = cardData.status === 'completed';
+      grouped[dateStr].forEach(vt => {
+        const cardData = vt.cardData;
+        const isCompleted = vt.isCompleted;
         const cardClass = isCompleted ? 'card-blue' : 'card-yellow';
         
         const card = document.createElement('div');
@@ -1193,10 +1287,14 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
         const displayDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
         const dataDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
         const activeDays = cardData.days || [];
-        const todayIndex = new Date().getDay();
+        
+        // Find which weekday index vt is on
+        const vtDate = new Date(vt.dateTimestamp);
+        const vtDayIndex = vtDate.getDay();
+
         const daysHTML = displayDays.map((d, i) => {
           const isActive = activeDays.includes(dataDays[i]) || activeDays.includes(d);
-          const isPunched = isCompleted && i === todayIndex;
+          const isPunched = isCompleted && i === vtDayIndex;
           return `<div class="action-card-day${isActive ? ' active' : ''}${isPunched ? ' punched' : ''}" data-index="${i}" style="cursor:default;"><span>${d}</span></div>`;
         }).join('');
 
@@ -1228,35 +1326,42 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
 
         statusBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          const currentCompleted = card.classList.contains('completed');
-          const newStatus = currentCompleted ? 'pending' : 'completed';
           
           // Toggle local classes for smooth transition
-          card.classList.toggle('completed');
+          const nowCompleted = card.classList.toggle('completed');
           card.classList.toggle('card-yellow');
           card.classList.toggle('card-blue');
           
-          const todayIndex = new Date().getDay();
-          const todayDayEl = card.querySelector(`.action-card-day[data-index="${todayIndex}"]`);
+          const todayDayEl = card.querySelector(`.action-card-day[data-index="${vtDayIndex}"]`);
           if (todayDayEl) {
-            todayDayEl.classList.toggle('punched');
+            todayDayEl.classList.toggle('punched', nowCompleted);
           }
           
-          // Update in localStorage
+          // Update selahe_tasks completions list
           let savedTasks = JSON.parse(localStorage.getItem('selahe_tasks')) || [];
-          const taskIndex = savedTasks.findIndex(t => t.id === task.id);
+          const taskIndex = savedTasks.findIndex(t => t.id === vt.taskId);
           if (taskIndex !== -1) {
-            savedTasks[taskIndex].cardData.status = newStatus;
+            if (!savedTasks[taskIndex].completions) savedTasks[taskIndex].completions = [];
+            
+            if (nowCompleted) {
+              if (!savedTasks[taskIndex].completions.includes(vt.dateStr)) {
+                savedTasks[taskIndex].completions.push(vt.dateStr);
+              }
+            } else {
+              savedTasks[taskIndex].completions = savedTasks[taskIndex].completions.filter(c => c !== vt.dateStr);
+            }
+            
             localStorage.setItem('selahe_tasks', JSON.stringify(savedTasks));
             
-            // Log to server if completing
-            if (newStatus === 'completed') {
+            // Log to server if completing today
+            const todayStr = dateToDateString(new Date());
+            if (nowCompleted && vt.dateStr === todayStr) {
               const today = new Date();
-              const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+              const dateStrFormatted = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
               fetch('/api/ledger-update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ taskId: task.id, dateStr })
+                body: JSON.stringify({ taskId: vt.taskId, dateStr: dateStrFormatted })
               }).catch(err => console.warn('Could not log ledger update:', err));
             }
 
