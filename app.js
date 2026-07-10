@@ -1305,7 +1305,12 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
           const loopDateStr = dateToDateString(loopDate);
           
           // Check if it was completed on that day of the week
-          const isPunched = vt.originalTask.completions && vt.originalTask.completions.includes(loopDateStr);
+          let isPunched = vt.originalTask.completions && vt.originalTask.completions.includes(loopDateStr);
+
+          // A card on date D should only show completions up to date D (no future leaks!)
+          if (loopDate > vtDate) {
+            isPunched = false;
+          }
 
           return `<div class="action-card-day${isActive ? ' active' : ''}${isPunched ? ' punched' : ''}" data-index="${i}" style="cursor:default;"><span>${d}</span></div>`;
         }).join('');
