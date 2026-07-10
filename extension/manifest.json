@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Selahe — Gemini Bridge",
+  "version": "1.0.0",
+  "description": "Connects your Gemini conversations to Selahe. Detects action cards from your Selahe Gem and saves them to your Action Logbook.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    },
+    "default_title": "Selahe Bridge"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://gemini.google.com/*"],
+      "js": ["content.js"],
+      "css": ["sidebar.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "host_permissions": [
+    "https://gemini.google.com/*",
+    "http://localhost:3000/*"
+  ],
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting"
+  ]
+}

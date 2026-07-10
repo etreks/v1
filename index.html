@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selahe — Turn feelings into action.</title>
+  <meta name="description"
+    content="An interactive AI companion that helps you process your feelings and turn them into actionable steps.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="main-sidebar">
+      <div class="sidebar-top" style="display: flex; align-items: center; gap: 23px;">
+        <button id="sidebar-toggle" class="sidebar-btn" aria-label="Toggle Navigation Panel" title="Toggle Navigation">
+          <img src="logo.png" alt="Toggle Sidebar" class="toggle-logo-img" />
+        </button>
+        <span id="brand-title" class="toggle-logo-text">Selahe</span>
+      </div>
+
+      <div class="sidebar-content">
+        <nav class="sidebar-nav">
+          <button id="open-logbook-btn" class="sidebar-nav-btn active" aria-label="Open Logbook">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M8 12l3 3 5-6"></path>
+            </svg>
+            <span class="sidebar-nav-text">Action Logbook</span>
+          </button>
+
+          <button id="sidebar-search-btn" class="sidebar-nav-btn" aria-label="Search">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span class="sidebar-nav-text">Search</span>
+          </button>
+        </nav>
+
+        <div class="history-list-wrapper">
+          <div class="history-list" id="history-list-container">
+            <!-- Dynamically populated -->
+            <div class="history-empty">No past sessions</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-bottom">
+        <!-- Theme toggle removed -->
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      <header class="top-header">
+        <div class="header-left">
+        </div>
+      </header>
+
+      <!-- Landing & Chat Screen -->
+      <main class="content-container">
+        <!-- Landing State Section -->
+        <section class="landing-state" id="landing-state">
+          <h1 class="landing-title">Turn feelings into action.</h1>
+          <div class="search-container">
+            <form id="landing-form" class="search-form">
+              <input type="text" id="feeling-input" placeholder="How are you feeling?" autocomplete="off" required>
+              <button type="submit" class="search-submit" aria-label="Submit feeling">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            </form>
+          </div>
+          <!-- Quick suggestions -->
+          <div class="quick-suggestions">
+            <button type="button" class="suggestion-tag" data-feeling="overwhelmed">I'm overwhelmed by work</button>
+            <button type="button" class="suggestion-tag" data-feeling="unmotivated">Unmotivated to start
+              writing</button>
+            <button type="button" class="suggestion-tag" data-feeling="anxious">Anxious about an interview</button>
+            <button type="button" class="suggestion-tag" data-feeling="excited">Excited but unfocused</button>
+          </div>
+        </section>
+
+        <!-- Chat State Section -->
+        <section class="chat-state" id="chat-state" style="display: none;">
+          <div class="chat-messages-wrapper" id="chat-messages">
+            <!-- Messages will be dynamically rendered here -->
+          </div>
+          <div class="chat-input-area">
+            <form id="chat-form" class="chat-form">
+              <input type="text" id="chat-input-field" placeholder="Write notes..." autocomplete="off" required>
+              <button type="submit" class="chat-submit-btn" aria-label="Send reply">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            </form>
+            <!-- Chat footer controls removed -->
+          </div>
+        </section>
+
+        <!-- New Action Logbook Main View -->
+        <section class="logbook-state" id="logbook-state" style="display: none;">
+          <div class="logbook-header">
+            <h1 class="logbook-title">Action Logbook</h1>
+          </div>
+          <div class="logbook-content" id="logbook-content">
+            <!-- Logbook cards rendered here by JS -->
+          </div>
+        </section>
+      </main>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal: Settings & Integrations -->
+  <div class="modal-overlay" id="settings-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Settings & Local Storage</h2>
+        <button class="close-modal-btn" id="close-settings-modal" aria-label="Close settings">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- Section: Data Storage Location -->
+        <div class="settings-section">
+          <h3>Local File Storage</h3>
+          <div class="sync-status-card">
+            <span class="sync-status-label">Storage Location:</span>
+            <span id="sync-status-badge" class="api-badge status-active">Local Filesystem</span>
+          </div>
+          <p class="settings-help-text">Your conversations and task actions are securely stored on this computer in
+            **`v1/data/`**.</p>
+        </div>
+
+        <!-- Section: Gemini API Key Configuration -->
+        <div class="settings-section">
+          <h3>Gemini API Configuration</h3>
+          <p class="settings-help-text">Enter your Google AI Studio Gemini API Key. Stored locally in your browser's
+            secure cache.</p>
+          <div class="api-key-input-wrapper">
+            <input type="password" id="gemini-api-key" placeholder="Enter Gemini API Key (AI Studio)...">
+            <button id="toggle-gemini-key-visibility" class="visibility-btn" type="button"
+              aria-label="Toggle Gemini Key visibility">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
+
+          <div class="settings-sub-section" style="margin-top: 10px; display: flex; flex-direction: column; gap: 6px;">
+            <label for="gemini-model-select" class="settings-label-text"
+              style="font-size: 13px; font-weight: 500; color: var(--text-secondary);">Select Gemini Model:</label>
+            <select id="gemini-model-select" class="provider-select-dropdown"
+              style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-color); background-color: var(--bg-secondary); color: var(--text-primary); font-size: 13px; font-weight: 500; outline: none; cursor: pointer;">
+              <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash (Fast, 15 RPM)</option>
+              <option value="gemini-2.5-pro">Gemini 2.5 Pro (Powerful, 2 RPM)</option>
+            </select>
+          </div>
+
+          <div class="settings-actions"
+            style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px;">
+            <button id="save-api-key-btn" class="save-settings-btn">Save Configurations</button>
+            <span id="api-status-badge" class="api-badge status-inactive">Not Configured</span>
+          </div>
+        </div>
+
+        <!-- Section: Usage & Credits -->
+        <div class="settings-section">
+          <h3>Token Usage Dashboard</h3>
+          <div class="usage-stats-grid">
+            <div class="usage-stat-box">
+              <span class="stat-label">Prompt Tokens</span>
+              <strong id="usage-prompt-tokens">0</strong>
+            </div>
+            <div class="usage-stat-box">
+              <span class="stat-label">Completion Tokens</span>
+              <strong id="usage-completion-tokens">0</strong>
+            </div>
+            <div class="usage-stat-box">
+              <span class="stat-label">Estimated Cost</span>
+              <strong id="usage-est-cost">$0.0000</strong>
+            </div>
+            <div class="usage-stat-box">
+              <span class="stat-label">Requests</span>
+              <strong id="usage-api-requests">0</strong>
+            </div>
+          </div>
+          <div class="credits-budget-container">
+            <div class="credits-progress-info">
+              <span>Credit Budget (Est. $10.00 Free Limit)</span>
+              <span id="credits-remaining-text">100% remaining</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="credits-progress-fill" style="width: 100%;"></div>
+            </div>
+          </div>
+          <button id="reset-usage-btn" class="text-btn">Reset usage statistics</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>

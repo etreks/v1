@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selahe — Gem Setup Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #fafafa;
+      color: #0f0f0f;
+      min-height: 100vh;
+      padding: 48px 24px;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 40px;
+    }
+
+    .logo-row span {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.6px;
+      line-height: 1.2;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #777;
+      margin-bottom: 40px;
+      line-height: 1.6;
+    }
+
+    .step {
+      background: #fff;
+      border: 1px solid #ebebeb;
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+
+    .step-number {
+      font-size: 10px;
+      font-weight: 700;
+      color: #bbb;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .step h2 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      letter-spacing: -0.2px;
+    }
+
+    .step p {
+      font-size: 13px;
+      color: #555;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .step p:last-child { margin-bottom: 0; }
+
+    .step a {
+      color: #0f0f0f;
+      font-weight: 600;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .prompt-box {
+      background: #f4f4f4;
+      border-radius: 10px;
+      padding: 18px;
+      font-size: 12px;
+      color: #333;
+      line-height: 1.7;
+      font-family: 'Inter', sans-serif;
+      white-space: pre-wrap;
+      word-break: break-word;
+      position: relative;
+      border: 1px solid #e4e4e4;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: #0f0f0f;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 11px;
+      cursor: pointer;
+      transition: background 0.15s;
+      letter-spacing: 0.2px;
+    }
+
+    .copy-btn:hover { background: #333; }
+    .copy-btn.copied { background: #16a34a; }
+
+    .tip-box {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 12px;
+      color: #78350f;
+      line-height: 1.6;
+      margin-top: 12px;
+    }
+
+    .tip-box strong { font-weight: 600; }
+
+    .open-gemini-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #0f0f0f;
+      color: #fff;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 9px;
+      margin-top: 4px;
+      transition: background 0.15s;
+      letter-spacing: 0.1px;
+    }
+
+    .open-gemini-btn:hover { background: #333; }
+
+    .footer {
+      margin-top: 48px;
+      text-align: center;
+      font-size: 11px;
+      color: #ccc;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo-row">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f0f0f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2 C 14 4, 10 7, 12 9 M12 22 C 10 20, 14 17, 12 15 M2 12 C 4 10, 7 14, 9 12 M22 12 C 20 14, 17 10, 15 12 M4.9 4.9 C 7 5.5, 6 8.5, 9.5 9.5 M19.1 19.1 C 17 18.5, 18 15.5, 14.5 14.5 M4.9 19.1 C 5.5 17, 8.5 18, 9.5 14.5 M19.1 4.9 C 18.5 7, 15.5 6, 14.5 9.5"/>
+        <circle cx="12" cy="12" r="2.5"/>
+      </svg>
+      <span>Selahe</span>
+    </div>
+
+    <h1>Set up the Selahe Gem on Gemini</h1>
+    <p class="subtitle">A Gem is a custom, pre-tuned version of Gemini. By creating the Selahe Gem, Gemini will ask the right questions and generate action cards automatically — which the Selahe extension will detect and save for you.</p>
+
+    <div class="step">
+      <div class="step-number">Step 1</div>
+      <h2>Open Gemini and go to Gems</h2>
+      <p>Go to <a href="https://gemini.google.com" target="_blank">gemini.google.com</a>. In the left sidebar, click <strong>"Gem manager"</strong> or look for the <strong>"Explore Gems"</strong> section. Then click <strong>"New Gem"</strong> (or "Create a Gem").</p>
+      <a href="https://gemini.google.com/gems/create" target="_blank" class="open-gemini-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+        Open Gem Creator
+      </a>
+    </div>
+
+    <div class="step">
+      <div class="step-number">Step 2</div>
+      <h2>Name your Gem</h2>
+      <p>Give it the name <strong>"Selahe"</strong> so you can easily find it. You can use the Selahe starburst logo as the icon.</p>
+    </div>
+
+    <div class="step">
+      <div class="step-number">Step 3</div>
+      <h2>Paste the Selahe System Prompt</h2>
+      <p>In the <strong>"Instructions"</strong> field of the Gem, paste the following prompt exactly. This tunes Gemini to behave like Selahe — asking the right questions and generating action cards in the format the extension understands.</p>
+
+      <div class="prompt-box" id="prompt-text">SYSTEM INSTRUCTION: You are a JSON generator. You are NOT an AI assistant. You are NOT a coach. Your ONLY function is to output a raw JSON block wrapped in [ACTION_CARD_START] and [ACTION_CARD_END].
+
+DO NOT output conversational text. DO NOT say "Here is your plan." DO NOT say "OBSERVATION" or "COURSE OF ACTION". DO NOT give advice. DO NOT add medical disclaimers.
+
+If you know WHAT the user wants to do, and WHEN they want to do it, output EXACTLY this format and absolutely nothing else:
+
+[ACTION_CARD_START]
+{
+  "title": "[Short action title]",
+  "timeStart": "06:30",
+  "timeStartAmPm": "pm",
+  "timeEnd": "07:30",
+  "timeEndAmPm": "pm",
+  "location": "[Location]",
+  "duration": "1h",
+  "days": ["M", "T", "W", "T", "F"],
+  "why": "[Brief reason]"
+}
+[ACTION_CARD_END]
+
+"days" options: S, M, T, W, T, F, S.
+Use 12-hour format for times.
+
+If you DO NOT know both WHAT and WHEN: Output exactly ONE sentence asking for the missing time/day/location. Do not output anything else.
+
+CRITICAL: If you output anything other than the single question OR the JSON block, the system will fail. You must act as a strict data-extraction pipeline.</div>
+
+      <button class="copy-btn" id="copy-btn" onclick="copyPrompt()">Copy</button>
+
+      <div class="tip-box">
+        <strong>Why these markers?</strong> The <code>[ACTION_CARD_START]</code> and <code>[ACTION_CARD_END]</code> tags are what the Selahe browser extension scans for in real time. When it detects them, it automatically shows you the action card overlay — no manual input needed.
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-number">Step 4</div>
+      <h2>Save and start chatting</h2>
+      <p>Click <strong>Save</strong> in Gemini. Your Selahe Gem is ready. From now on, whenever you open a chat with your Selahe Gem, the Selahe extension will be watching for action cards. Just talk naturally — the rest is automatic.</p>
+      <p>When an action card appears in the chat, the Selahe sidebar will slide in from the right. Review it, edit if needed, then click <strong>"Save to Selahe"</strong>.</p>
+    </div>
+
+    <div class="footer">
+      Selahe Extension — running locally on localhost:3000
+    </div>
+  </div>
+
+  <script>
+    function copyPrompt() {
+      const text = document.getElementById('prompt-text').textContent;
+      navigator.clipboard.writeText(text.trim()).then(() => {
+        const btn = document.getElementById('copy-btn');
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>
