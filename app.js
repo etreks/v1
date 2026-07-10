@@ -31,6 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     openLogbookBtn.classList.add('active');
 
+    activeSessionId = null;
+    renderHistoryPanel(); // Clear highlight on active chat items
+
     // Update URL
     if (window.location.pathname !== '/action') {
       history.pushState(null, '', '/action');
@@ -264,20 +267,28 @@ document.addEventListener('DOMContentLoaded', () => {
     chatSessions = JSON.parse(localStorage.getItem('selahe_sessions')) || {};
     taskList = JSON.parse(localStorage.getItem('selahe_tasks')) || [];
 
-    // Auto-migrate legacy tasks that lack a sessionId by matching their title to existing chats
-    let tasksUpdated = false;
-    taskList.forEach(task => {
-      if (!task.sessionId && task.cardData && task.cardData.title) {
+    // Clean up orphaned tasks and migrate legacy tasks
+    const initialTaskCount = taskList.length;
+    taskList = taskList.filter(task => {
+      // If the task has a sessionId, keep it only if the chat session still exists
+      if (task.sessionId) {
+        return !!chatSessions[task.sessionId];
+      }
+      // If it doesn't have a sessionId, check if we can migrate/link it to an existing chat
+      if (task.cardData && task.cardData.title) {
         const matchingSessionId = Object.keys(chatSessions).find(id => {
           return chatSessions[id].actionTitle === task.cardData.title || chatSessions[id].title === task.cardData.title;
         });
         if (matchingSessionId) {
           task.sessionId = matchingSessionId;
-          tasksUpdated = true;
+          return true; // Keep and update with the link
         }
       }
+      // If it has no sessionId and cannot be matched to any current chat, it was orphaned -> delete it!
+      return false;
     });
-    if (tasksUpdated) {
+
+    if (taskList.length !== initialTaskCount) {
       localStorage.setItem('selahe_tasks', JSON.stringify(taskList));
     }
 
@@ -445,6 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
     chatSessions[activeSessionId].messages.push(messageObj);
     renderMessage(messageObj);
     syncSessionsToServer();
+    chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
   function renderMessage(messageObj) {
@@ -469,6 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Build card using innerHTML to exactly match the React component structure
       const card = document.createElement('div');
       card.classList.add('action-card');
+      card.dataset.cardId = messageObj.timestamp;
 
       // displayDays for UI, dataDays for the JSON schema
       const displayDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -476,6 +489,42 @@ document.addEventListener('DOMContentLoaded', () => {
       const activeDays = cardData.days || [];
 
       let displayTitle = cardData.title || 'Action Item';
+
+      // Check if any card has been saved for this session
+      const savedTasks = JSON.parse(localStorage.getItem('selahe_tasks')) || [];
+      const sessionTasks = savedTasks.filter(t => t.sessionId === activeSessionId);
+      const isAnyCardSaved = sessionTasks.length > 0;
+      const isThisCardSaved = sessionTasks.some(t => t.cardId === messageObj.timestamp);
+
+      let addBtnHTML = '';
+      if (isThisCardSaved) {
+        // Show disabled tick icon
+        addBtnHTML = `
+          <button class="action-card-btn add-btn" disabled style="opacity: 0.5; cursor: default;" title="Added to Logbook">
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#373737" stroke-width="1.5" stroke-linecap="round">
+              <path d="M2 6 L5 9 L10 3"/>
+            </svg>
+          </button>
+        `;
+      } else if (isAnyCardSaved) {
+        // Hide or disable the add button if another card is already saved
+        addBtnHTML = `
+          <button class="action-card-btn add-btn" disabled style="opacity: 0.2; cursor: not-allowed;" title="Only one card can be saved per chat">
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#373737" stroke-width="1.2" stroke-linecap="round">
+              <path d="M2 6 H10 M6 2 V10"/>
+            </svg>
+          </button>
+        `;
+      } else {
+        // Normal add button
+        addBtnHTML = `
+          <button class="action-card-btn add-btn" aria-label="Add to Logbook" title="Add to Logbook">
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#373737" stroke-width="1.2" stroke-linecap="round">
+              <path d="M2 6 H10 M6 2 V10"/>
+            </svg>
+          </button>
+        `;
+      }
 
       card.innerHTML = `
         <div class="action-card-header">
@@ -487,11 +536,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <path d="M7 3 L9 5"/>
               </svg>
             </button>
-            <button class="action-card-btn add-btn" aria-label="Add to Logbook" title="Add to Logbook">
-              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#373737" stroke-width="1.2" stroke-linecap="round">
-                <path d="M2 6 H10 M6 2 V10"/>
-              </svg>
-            </button>
+            ${addBtnHTML}
           </div>
         </div>
 
@@ -522,7 +567,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Day toggle on click
       card.querySelectorAll('.action-card-day').forEach(dayEl => {
-        dayEl.addEventListener('click', () => dayEl.classList.toggle('active'));
+        dayEl.addEventListener('click', () => {
+          dayEl.classList.toggle('active');
+          const dayIndex = parseInt(dayEl.dataset.index);
+          const dayCode = dataDays[dayIndex];
+          
+          if (!cardData.days) cardData.days = [];
+          
+          if (dayEl.classList.contains('active')) {
+            if (!cardData.days.includes(dayCode)) {
+              cardData.days.push(dayCode);
+            }
+          } else {
+            cardData.days = cardData.days.filter(d => d !== dayCode);
+          }
+          
+          // If this card is currently saved in logbook, update its days in tasks
+          let savedTasks = JSON.parse(localStorage.getItem('selahe_tasks')) || [];
+          const taskIndex = savedTasks.findIndex(t => t.sessionId === activeSessionId && t.cardId === messageObj.timestamp);
+          if (taskIndex !== -1) {
+            savedTasks[taskIndex].cardData.days = cardData.days;
+            localStorage.setItem('selahe_tasks', JSON.stringify(savedTasks));
+            
+            // Re-render logbook view if currently open
+            if (logbookState && logbookState.style.display === 'block') {
+              window.renderLogbook();
+            }
+          }
+          syncSessionsToServer();
+        });
       });
 
       // Edit button toggle
@@ -567,8 +640,42 @@ document.addEventListener('DOMContentLoaded', () => {
           const whyEl = card.querySelector('.action-card-why-text');
           whyEl.contentEditable = 'false';
           cardData.why = whyEl.textContent.trim();
-          cardData.title = card.querySelector('.action-card-title').textContent.trim();
+          
+          const newTitle = card.querySelector('.action-card-title').textContent.trim();
+          cardData.title = newTitle;
           card.querySelector('.action-card-title').contentEditable = 'false';
+
+          // Sync title changes directly to active session object and header
+          if (activeSessionId && chatSessions[activeSessionId]) {
+            chatSessions[activeSessionId].actionTitle = newTitle;
+            chatSessions[activeSessionId].title = newTitle;
+            if (mainHeaderTitle) mainHeaderTitle.textContent = newTitle;
+          }
+
+          // If this card is currently saved in logbook, update its entire dataset in tasks
+          let savedTasks = JSON.parse(localStorage.getItem('selahe_tasks')) || [];
+          const taskIndex = savedTasks.findIndex(t => t.sessionId === activeSessionId && t.cardId === messageObj.timestamp);
+          if (taskIndex !== -1) {
+            const oldStatus = savedTasks[taskIndex].cardData.status || 'pending';
+            savedTasks[taskIndex].cardData = { ...cardData, status: oldStatus };
+
+            const timeStart = card.querySelector('[data-field="timeStart"]')?.textContent.trim() || '';
+            const timeStartAmPm = card.querySelector('[data-field="timeStartAmPm"]')?.textContent.trim() || '';
+            const timeEnd = card.querySelector('[data-field="timeEnd"]')?.textContent.trim() || '';
+            const timeEndAmPm = card.querySelector('[data-field="timeEndAmPm"]')?.textContent.trim() || '';
+            const location = card.querySelector('[data-field="location"]')?.textContent.trim() || '';
+            savedTasks[taskIndex].text = `${newTitle} (${timeStart}${timeStartAmPm} - ${timeEnd}${timeEndAmPm} • ${location})`;
+
+            localStorage.setItem('selahe_tasks', JSON.stringify(savedTasks));
+
+            // Re-render logbook view if currently open
+            if (logbookState && logbookState.style.display === 'block') {
+              window.renderLogbook();
+            }
+          }
+
+          // Re-render sidebar to reflect name change instantly
+          renderHistoryPanel();
 
           // Revert to original edit icon
           editBtn.style.cssText = originalCssText;
@@ -580,42 +687,60 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Add/Plus button action: add task to logbook checklist
       const addBtn = card.querySelector('.add-btn');
-      addBtn.addEventListener('click', () => {
-        const title = card.querySelector('.action-card-title').textContent.trim();
-        const timeStart = card.querySelector('[data-field="timeStart"]')?.textContent.trim() || '';
-        const timeStartAmPm = card.querySelector('[data-field="timeStartAmPm"]')?.textContent.trim() || '';
-        const timeEnd = card.querySelector('[data-field="timeEnd"]')?.textContent.trim() || '';
-        const timeEndAmPm = card.querySelector('[data-field="timeEndAmPm"]')?.textContent.trim() || '';
-        const location = card.querySelector('[data-field="location"]')?.textContent.trim() || '';
-        const taskText = `${title} (${timeStart}${timeStartAmPm} - ${timeEnd}${timeEndAmPm} • ${location})`;
+      if (addBtn) {
+        addBtn.addEventListener('click', () => {
+          const title = card.querySelector('.action-card-title').textContent.trim();
+          const timeStart = card.querySelector('[data-field="timeStart"]')?.textContent.trim() || '';
+          const timeStartAmPm = card.querySelector('[data-field="timeStartAmPm"]')?.textContent.trim() || '';
+          const timeEnd = card.querySelector('[data-field="timeEnd"]')?.textContent.trim() || '';
+          const timeEndAmPm = card.querySelector('[data-field="timeEndAmPm"]')?.textContent.trim() || '';
+          const location = card.querySelector('[data-field="location"]')?.textContent.trim() || '';
+          const taskText = `${title} (${timeStart}${timeStartAmPm} - ${timeEnd}${timeEndAmPm} • ${location})`;
 
-        // Save full cardData to persistent storage with default status
-        cardData.status = 'pending';
-        let savedTasks = JSON.parse(localStorage.getItem('selahe_tasks')) || [];
-        savedTasks.push({
-          id: 'task_' + Date.now(),
-          text: taskText,
-          cardData: cardData,
-          date: Date.now(),
-          sessionId: activeSessionId
+          // Save full cardData to persistent storage with default status
+          cardData.status = 'pending';
+          let savedTasks = JSON.parse(localStorage.getItem('selahe_tasks')) || [];
+          savedTasks.push({
+            id: 'task_' + Date.now(),
+            text: taskText,
+            cardData: cardData,
+            date: Date.now(),
+            sessionId: activeSessionId,
+            cardId: messageObj.timestamp // Lock logbook task to this specific chat message card
+          });
+          localStorage.setItem('selahe_tasks', JSON.stringify(savedTasks));
+
+          // Mark the chat session as saved and update its title to this card
+          if (activeSessionId && chatSessions[activeSessionId]) {
+            chatSessions[activeSessionId].hasSavedCard = true;
+            chatSessions[activeSessionId].actionTitle = cardData.title;
+            chatSessions[activeSessionId].title = cardData.title;
+            if (mainHeaderTitle) mainHeaderTitle.textContent = cardData.title;
+            syncSessionsToServer();
+            renderHistoryPanel(); // refresh sidebar
+          }
+
+          // Disable and checkmark this specific save button
+          addBtn.disabled = true;
+          addBtn.style.opacity = 0.5;
+          addBtn.style.cursor = 'default';
+          addBtn.innerHTML = `<svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#373737" stroke-width="1.5" stroke-linecap="round"><path d="M2 6 L5 9 L10 3"/></svg>`;
+          addBtn.title = 'Added to Logbook';
+
+          // Disable save button on all other cards generated in this session
+          document.querySelectorAll('.action-card').forEach(c => {
+            if (c.dataset.cardId !== String(messageObj.timestamp)) {
+              const otherAddBtn = c.querySelector('.add-btn');
+              if (otherAddBtn) {
+                otherAddBtn.disabled = true;
+                otherAddBtn.style.opacity = '0.2';
+                otherAddBtn.style.cursor = 'not-allowed';
+                otherAddBtn.title = 'Only one card can be saved per chat';
+              }
+            }
+          });
         });
-        localStorage.setItem('selahe_tasks', JSON.stringify(savedTasks));
-
-        // Mark the chat session as saved and update its title to this card
-        if (activeSessionId && chatSessions[activeSessionId]) {
-          chatSessions[activeSessionId].hasSavedCard = true;
-          chatSessions[activeSessionId].actionTitle = cardData.title;
-          chatSessions[activeSessionId].title = cardData.title;
-          if (mainHeaderTitle) mainHeaderTitle.textContent = cardData.title;
-          syncSessionsToServer();
-          renderHistoryPanel(); // refresh sidebar
-        }
-
-        addBtn.disabled = true;
-        addBtn.style.opacity = 0.5;
-        addBtn.innerHTML = `<svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#373737" stroke-width="1.5" stroke-linecap="round"><path d="M2 6 L5 9 L10 3"/></svg>`;
-        addBtn.title = 'Added to Logbook';
-      });
+      }
 
       msgElement.appendChild(card);
 
@@ -960,6 +1085,8 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
     }
 
     activeSessionId = sessionId;
+    renderHistoryPanel(); // Highlight this chat in the sidebar and de-highlight others
+    
     landingState.style.display = 'none';
     if (logbookState) logbookState.style.display = 'none';
     chatState.style.display = 'flex';
@@ -975,6 +1102,7 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
     session.messages.forEach(msg => {
       renderMessage(msg);
     });
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 
     if (window.innerWidth <= 768) {
       if (mainSidebar) {
@@ -989,6 +1117,17 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
   function deleteSession(sessionId) {
     delete chatSessions[sessionId];
     syncSessionsToServer();
+
+    // Cascading deletion: remove all Action Cards in the logbook belonging to this session
+    let savedTasks = JSON.parse(localStorage.getItem('selahe_tasks')) || [];
+    const updatedTasks = savedTasks.filter(t => t.sessionId !== sessionId);
+    localStorage.setItem('selahe_tasks', JSON.stringify(updatedTasks));
+    taskList = updatedTasks;
+
+    // Refresh logbook view if currently open
+    if (logbookState && logbookState.style.display === 'block') {
+      window.renderLogbook();
+    }
 
     if (activeSessionId === sessionId) {
       startFresh();
