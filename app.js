@@ -512,7 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       // Show User Profile Card
       const userMeta = user.user_metadata || {};
-      const avatarUrl = userMeta.avatar_url || 'logo.png';
+      const avatarUrl = userMeta.avatar_url || '/logo.png';
       const displayName = userMeta.full_name || user.email.split('@')[0];
       const email = user.email;
 
