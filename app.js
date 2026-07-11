@@ -796,6 +796,45 @@ document.addEventListener('DOMContentLoaded', () => {
     handleAIResponse(inputText, feeling);
   }
 
+  function renderWhyTextInnerHTML(whyText) {
+    if (!whyText) return '';
+    const cleanWhyText = whyText.trim();
+    if (cleanWhyText.length <= 85) {
+      return cleanWhyText;
+    }
+    const shortText = cleanWhyText.substring(0, 80).trim();
+    return `
+      <span class="why-short-span">${shortText}...</span>
+      <span class="why-full-span" style="display: none;">${cleanWhyText}</span>
+      <button class="why-toggle-btn" type="button">see more</button>
+    `;
+  }
+
+  // Toggle see more / see less
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('why-toggle-btn')) {
+      e.preventDefault();
+      e.stopPropagation();
+      const btn = e.target;
+      const parent = btn.closest('.action-card-why-text');
+      if (!parent) return;
+      const shortSpan = parent.querySelector('.why-short-span');
+      const fullSpan = parent.querySelector('.why-full-span');
+      if (shortSpan && fullSpan) {
+        const isCollapsed = fullSpan.style.display === 'none';
+        if (isCollapsed) {
+          fullSpan.style.display = 'inline';
+          shortSpan.style.display = 'none';
+          btn.textContent = 'see less';
+        } else {
+          fullSpan.style.display = 'none';
+          shortSpan.style.display = 'inline';
+          btn.textContent = 'see more';
+        }
+      }
+    }
+  });
+
   function addMessageToActiveSession(sender, text, actionData = null, actionCardData = null) {
     if (!activeSessionId) return;
 
@@ -845,7 +884,7 @@ document.addEventListener('DOMContentLoaded', () => {
       card.dataset.cardId = messageObj.timestamp;
 
       // displayDays for UI, dataDays for the JSON schema
-      const displayDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+      const displayDays = ['Su', 'M', 'T', 'W', 'Th', 'F', 'Sa'];
       const dataDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
       const activeDays = cardData.days || [];
 
@@ -922,7 +961,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         <div class="action-card-why-section">
           <h3 class="action-card-why-label">Why?</h3>
-          <p class="action-card-why-text">${cardData.why || ''}</p>
+          <p class="action-card-why-text" data-full-text="${(cardData.why || '').replace(/"/g, '&quot;')}">${renderWhyTextInnerHTML(cardData.why)}</p>
         </div>
       `;
 
@@ -974,7 +1013,12 @@ document.addEventListener('DOMContentLoaded', () => {
           card.querySelectorAll('.action-card-time-pill, .action-card-location').forEach(el => {
             el.contentEditable = 'true';
           });
-          card.querySelector('.action-card-why-text').contentEditable = 'true';
+          
+          // Restore full text for editing
+          const whyTextEl = card.querySelector('.action-card-why-text');
+          const fullText = whyTextEl.getAttribute('data-full-text') || cardData.why || '';
+          whyTextEl.textContent = fullText;
+          whyTextEl.contentEditable = 'true';
           card.querySelector('.action-card-title').contentEditable = 'true';
 
           // Visual feedback: Turn into a "Save" pill
@@ -999,7 +1043,10 @@ document.addEventListener('DOMContentLoaded', () => {
           const newTimeEnd = card.querySelector('[data-field="timeEnd"]')?.textContent.trim() || '';
           const newTimeEndAmPm = card.querySelector('[data-field="timeEndAmPm"]')?.textContent.trim() || '';
           const newLocation = card.querySelector('[data-field="location"]')?.textContent.trim() || '';
-          const newWhy = card.querySelector('.action-card-why-text').textContent.trim();
+          
+          // Retrieve new why text from DOM before locking it
+          const whyTextEl = card.querySelector('.action-card-why-text');
+          const newWhy = whyTextEl.textContent.trim();
 
           const hasChanges = 
             newTitle !== oldCopy.title ||
@@ -1017,7 +1064,11 @@ document.addEventListener('DOMContentLoaded', () => {
           card.querySelectorAll('.action-card-time-pill, .action-card-location').forEach(el => {
             el.contentEditable = 'false';
           });
-          card.querySelector('.action-card-why-text').contentEditable = 'false';
+          
+          // Format why text and save back to dataset
+          whyTextEl.setAttribute('data-full-text', newWhy);
+          whyTextEl.innerHTML = renderWhyTextInnerHTML(newWhy);
+          whyTextEl.contentEditable = 'false';
           card.querySelector('.action-card-title').contentEditable = 'false';
 
           // Update dataset
@@ -1142,16 +1193,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       msgElement.appendChild(card);
 
-      // Starburst logo separator
-      const starburstSep = document.createElement('div');
-      starburstSep.classList.add('starburst-separator');
-      starburstSep.innerHTML = `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2 C 14 4, 10 7, 12 9 M12 22 C 10 20, 14 17, 12 15 M2 12 C 4 10, 7 14, 9 12 M22 12 C 20 14, 17 10, 15 12 M4.9 4.9 C 7 5.5, 6 8.5, 9.5 9.5 M19.1 19.1 C 17 18.5, 18 15.5, 14.5 14.5 M4.9 19.1 C 5.5 17, 8.5 18, 9.5 14.5 M19.1 4.9 C 18.5 7, 15.5 6, 14.5 9.5"/>
-          <circle cx="12" cy="12" r="2.5" />
-        </svg>
-      `;
-      msgElement.appendChild(starburstSep);
     }
 
     chatMessages.appendChild(msgElement);
@@ -1218,16 +1259,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const systemPrompt = `You are Selahe — a fast, direct, unbiased reflection machine. Not a therapist. Not a friend. A tool that converts what the user says into a clear Course of Action.
 
-RULES (follow strictly, no exceptions):
-- Ask AT MOST ONE question per turn. Never chain multiple questions in one response.
+RULES FOR THE CONVERSATIONAL RESPONSE:
+- Write exactly 2 to 3 sentences in your response. Keep it direct and minimalistic, but insightful.
+- Sentence 1: Acknowledge what the user said with a brief comment or reflection on their situation.
+- Sentence 2: Suggest a possible solution, strategy, or helpful tip for the problem they face (e.g., if they struggle with sleep or consistency, give a simple, direct hack).
+- Sentence 3 (optional): Ask AT MOST ONE direct question to get missing details (only if you don't have enough info to generate the action card yet).
 - If the user has already told you what they want to do AND when — generate the Action Card immediately. Do not ask for more.
 - If the user expresses a clear intent ("I want to go to the gym tomorrow at 6PM") — that's enough. Make the card.
-- If critical info is genuinely missing (no "what" or no "when") — ask ONE short question to get it, then stop.
-- Never ask WHY if the user hasn't volunteered it. You can infer a brief "why" from context.
-- Keep all conversational text under 2 short sentences. Be direct, not warm.
 - You are not diagnosing anyone. You are just converting intent into a structured commitment.
 
-When you have enough information, output a Course of Action Card using this exact JSON format:
+RULES FOR THE COURSE OF ACTION CARD:
+When you have enough information, output a Course of Action Card using this exact JSON format at the end of your response:
 [ACTION_CARD_START]
 {
   "title": "Go to the Gym",
@@ -1242,11 +1284,13 @@ When you have enough information, output a Course of Action Card using this exac
 }
 [ACTION_CARD_END]
 
-"days" must be an array using these exact abbreviations: "Su", "Mo", "Tu", "We", "Th", "Fr", "Sa". 
-If the user specifies a number of days (e.g., "6 times a week"), output exactly that many distinct days.
-Write the "why" in the first-person from the user's perspective (e.g., "I want to...", "I committed to...").
-If duration is not mentioned, estimate it reasonably based on the activity. If location is not mentioned, infer from context or use a sensible default.
-IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "08:30") and set timeStartAmPm/timeEndAmPm correctly. Never use 24-hour format (e.g. never use "18:00").`;
+MAPPING THE DAYS:
+- "days" must be an array using these exact abbreviations: "Su" (Sunday), "Mo" (Monday), "Tu" (Tuesday), "We" (Wednesday), "Th" (Thursday), "Fr" (Friday), "Sa" (Saturday).
+- PAY EXTREME ATTENTION to Sunday ("Su") vs Saturday ("Sa"). They are completely distinct days. If the user says "except Sunday", DO NOT include "Su" in the days array, but you can include "Sa".
+- If the user specifies a number of days (e.g., "5 times a week, except Sunday"), choose exactly 5 distinct days matching their constraints (e.g. ["Mo", "Tu", "We", "Th", "Fr"] or ["Mo", "Tu", "We", "Th", "Sa"]). Do NOT just select all 7 days.
+- Write the "why" in the first-person from the user's perspective (e.g., "I want to...", "I committed to...").
+- If duration is not mentioned, estimate it reasonably based on the activity. If location is not mentioned, infer from context or use a sensible default.
+- IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "08:30") and set timeStartAmPm/timeEndAmPm correctly. Never use 24-hour format (e.g. never use "18:00").`;
 
     // Build the multi-turn conversation history for Gemini
     const historyParts = conversationHistory
@@ -1370,7 +1414,7 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
     const createdMidnight = new Date(taskCreatedDate.getFullYear(), taskCreatedDate.getMonth(), taskCreatedDate.getDate());
     if (compareDate < createdMidnight) return false;
 
-    const displayDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    const displayDays = ['Su', 'M', 'T', 'W', 'Th', 'F', 'Sa'];
     const dataDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
     
     const dayOfWeekIndex = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
@@ -1730,7 +1774,7 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
         card.style.maxWidth = '100%';
         card.style.position = 'relative';
 
-        const displayDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+        const displayDays = ['Su', 'M', 'T', 'W', 'Th', 'F', 'Sa'];
         const dataDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
         const activeDays = cardData.days || [];
         
@@ -1781,7 +1825,7 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
           <div class="action-card-days" style="margin-top:12px;">${daysHTML}</div>
           <div class="action-card-why-section" style="margin-top:16px;">
             <h3 class="action-card-why-label">Why?</h3>
-            <p class="action-card-why-text" style="font-size:12px; margin-bottom:0;">${cardData.why || ''}</p>
+            <p class="action-card-why-text" data-full-text="${(cardData.why || '').replace(/"/g, '&quot;')}" style="font-size:12px; margin-bottom:0;">${renderWhyTextInnerHTML(cardData.why)}</p>
           </div>
         `;
 
@@ -2184,7 +2228,7 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
     const activeDays = cardData.days || [];
     const why = cardData.why || '';
 
-    const displayDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    const displayDays = ['Su', 'M', 'T', 'W', 'Th', 'F', 'Sa'];
     const dataDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
     const daysHTML = displayDays.map((d, i) => {
