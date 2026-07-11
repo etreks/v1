@@ -1,0 +1,10 @@
+{
+  "name": "selahe",
+  "version": "1.0.0",
+  "description": "Selahe lightweight backend server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {}
+}
