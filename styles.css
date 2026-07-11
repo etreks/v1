@@ -829,8 +829,8 @@ button:focus-visible {
   height: 42px;
   border-radius: 50%;
   border: none;
-  background-color: var(--text-primary);
-  color: var(--bg-primary);
+  background-color: #EAEAEA;
+  color: #000000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -840,12 +840,12 @@ button:focus-visible {
 
 .search-submit:hover {
   transform: scale(1.05);
+  background-color: #DFDFDF;
 }
 
 .search-submit svg {
   width: 18px;
   height: 18px;
-  transform: translateX(-1px) translateY(1px);
 }
 
 .quick-suggestions {
@@ -1067,8 +1067,8 @@ button:focus-visible {
   height: 36px;
   border-radius: 50%;
   border: none;
-  background-color: var(--text-primary);
-  color: var(--bg-primary);
+  background-color: #EAEAEA;
+  color: #000000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1078,12 +1078,12 @@ button:focus-visible {
 
 .chat-submit-btn:hover {
   transform: scale(1.05);
+  background-color: #DFDFDF;
 }
 
 .chat-submit-btn svg {
   width: 16px;
   height: 16px;
-  transform: translateX(-1px) translateY(0.5px);
 }
 
 .text-btn {
