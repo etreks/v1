@@ -59,8 +59,8 @@ const server = http.createServer((req, res) => {
     };
 
     if (urlPath === '/api/chat' && req.method === 'POST') {
-      const groqKey = process.env.GROQ_API_KEY;
-      const geminiKey = process.env.GEMINI_API_KEY;
+      const groqKey = process.env.GROQ_API_KEY || process.env.GROQ_Selahe;
+      const geminiKey = process.env.GEMINI_API_KEY || process.env.GEMINI_Selahe;
 
       if (!groqKey && !geminiKey) {
         res.statusCode = 500;
