@@ -816,7 +816,6 @@ button:focus-visible {
 
 .search-form input:focus {
   outline: none;
-  border-color: #000000;
 }
 
 .search-submit {
