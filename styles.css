@@ -336,7 +336,7 @@ button:focus-visible {
 .sidebar.expanded .history-list-wrapper {
   opacity: 1;
   pointer-events: auto;
-  padding: 0 12px;
+  padding: 0;
 }
 
 .sidebar-bottom {
