@@ -750,7 +750,13 @@ button:focus-visible {
   position: relative;
   z-index: 10;
   padding: 0 24px 40px 24px;
-  /* Padding top accounts for header, bottom padding fixed for cutoff */
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.content-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 /* Landing State styling */
