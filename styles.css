@@ -404,6 +404,7 @@ button:focus-visible {
 .history-list {
   display: flex;
   flex-direction: column;
+  padding: 0 var(--sidebar-item-padding);
 }
 
 .history-date-header {
@@ -411,16 +412,16 @@ button:focus-visible {
   font-size: 10px;
   font-weight: 600;
   color: var(--text-muted);
-  padding: 20px 16px 6px 16px;
+  padding: 20px 9px 6px 9px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   opacity: 0.85;
 }
 
 .history-item {
-  margin: 2px 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
+  margin: 2px 0;
+  padding: 8px 9px;
+  border-radius: 6px;
   background-color: transparent;
   border: none;
   cursor: pointer;
@@ -433,23 +434,21 @@ button:focus-visible {
 }
 
 .history-item:hover {
-  background-color: rgba(0, 0, 0, 0.03);
+  background-color: #f9fafb;
 }
 
 .history-item.active {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: #EBEBEB;
   color: var(--text-primary);
-  font-weight: 500;
 }
 
 [data-theme="dark"] .history-item:hover {
-  background-color: rgba(255, 255, 255, 0.04);
+  background-color: var(--bg-tertiary);
 }
 
 [data-theme="dark"] .history-item.active {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: var(--bg-tertiary);
   color: var(--text-primary);
-  font-weight: 500;
 }
 
 .history-dot {
@@ -457,7 +456,6 @@ button:focus-visible {
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-left: var(--dot-shift);
 }
 
 .history-item-inner {
@@ -468,13 +466,14 @@ button:focus-visible {
 }
 
 .history-item-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 400;
-  color: #2F2F2F;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
+  margin-left: 25px;
   transform: translateX(var(--text-shift));
 }
 

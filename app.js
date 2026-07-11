@@ -1213,14 +1213,22 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
         const innerWrapper = document.createElement('div');
         innerWrapper.style.display = 'flex';
         innerWrapper.style.alignItems = 'center';
-        innerWrapper.style.gap = '8px';
         innerWrapper.style.flex = '1';
         innerWrapper.style.minWidth = '0';
+
+        const dotWrapper = document.createElement('div');
+        dotWrapper.style.width = '20px';
+        dotWrapper.style.height = '20px';
+        dotWrapper.style.display = 'flex';
+        dotWrapper.style.alignItems = 'center';
+        dotWrapper.style.justifyContent = 'center';
+        dotWrapper.style.flexShrink = '0';
 
         const dot = document.createElement('div');
         dot.classList.add('history-dot');
         dot.style.backgroundColor = dotColor;
-        innerWrapper.appendChild(dot);
+        dotWrapper.appendChild(dot);
+        innerWrapper.appendChild(dotWrapper);
 
         const titleSpan = document.createElement('span');
         titleSpan.classList.add('history-item-title');
