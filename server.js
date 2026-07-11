@@ -62,7 +62,10 @@ const server = http.createServer((req, res) => {
       const groqKey = process.env.GROQ_API_KEY || process.env.GROQ_Selahe;
       const geminiKey = process.env.GEMINI_API_KEY || process.env.GEMINI_Selahe;
 
+      console.log(`[API Chat Proxy] Request received. Keys loaded - GROQ: ${!!groqKey}, GEMINI: ${!!geminiKey}`);
+
       if (!groqKey && !geminiKey) {
+        console.error('[API Chat Proxy] Error: No API keys configured in environment variables.');
         res.statusCode = 500;
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({ error: 'Server is missing API keys (GEMINI_API_KEY or GROQ_API_KEY) in environment.' }));
@@ -70,12 +73,13 @@ const server = http.createServer((req, res) => {
       }
 
       if (groqKey) {
-        // Groq API Mode (Llama 3.1 70B)
+        console.log('[API Chat Proxy] Routing request to Groq API (Llama 3.3 70B)...');
         getBody((body) => {
           let payload;
           try {
             payload = JSON.parse(body);
           } catch (e) {
+            console.error('[API Chat Proxy] JSON parse error on client request body:', e.message);
             res.statusCode = 400;
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({ error: 'Invalid JSON' }));
@@ -115,6 +119,8 @@ const server = http.createServer((req, res) => {
             groqRes.on('end', () => {
               res.setHeader('Content-Type', 'application/json');
               res.statusCode = groqRes.statusCode;
+              console.log(`[API Chat Proxy] Groq response code: ${groqRes.statusCode}`);
+              
               if (groqRes.statusCode === 200) {
                 try {
                   const data = JSON.parse(resData);
@@ -139,16 +145,19 @@ const server = http.createServer((req, res) => {
                   };
                   res.end(JSON.stringify(geminiResponse));
                 } catch (jsonErr) {
+                  console.error('[API Chat Proxy] Error parsing Groq JSON response:', jsonErr.message, 'Raw response:', resData);
                   res.statusCode = 500;
                   res.end(JSON.stringify({ error: 'Failed to parse Groq response' }));
                 }
               } else {
+                console.error(`[API Chat Proxy] Groq API returned error body:`, resData);
                 res.end(resData);
               }
             });
           });
 
           groqReq.on('error', (err) => {
+            console.error('[API Chat Proxy] Connection error to Groq API:', err.message);
             res.statusCode = 500;
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({ error: err.message }));
