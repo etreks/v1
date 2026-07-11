@@ -183,7 +183,7 @@ button:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  padding: 0;
+  padding: 0 var(--sidebar-item-padding);
   gap: 0px;
 }
 
@@ -263,50 +263,40 @@ button:focus-visible {
 .sidebar-nav-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  margin: 4px auto;
-  border-radius: 50%;
+  justify-content: flex-start;
+  width: 100%;
+  padding: 8px 9px;
+  border-radius: 6px;
   border: none;
   outline: none;
   background: transparent;
   color: var(--text-primary);
   cursor: pointer;
   overflow: hidden;
-  transition: background-color 150ms ease-out, border-radius 150ms ease-out, width 150ms ease-out, padding 150ms ease-out;
-  padding: 0;
-  flex-shrink: 0;
+  transition: background-color 150ms ease-out;
 }
 
 .sidebar-nav-btn:focus {
   outline: none;
 }
 
+
+
 .sidebar-nav-btn:hover {
-  background-color: #EFF0F2;
+  background-color: #f9fafb;
 }
 
 .sidebar-nav-btn.active {
-  background-color: #E2E6EA;
+  background-color: #EBEBEB;
   color: var(--text-primary);
 }
 
 [data-theme="dark"] .sidebar-nav-btn:hover {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: var(--bg-tertiary);
 }
 
 [data-theme="dark"] .sidebar-nav-btn.active {
-  background-color: rgba(255, 255, 255, 0.12);
-}
-
-.sidebar.expanded .sidebar-nav-btn {
-  justify-content: flex-start;
-  width: calc(100% - 16px);
-  height: auto;
-  margin: 2px 8px;
-  padding: 8px 12px;
-  border-radius: 100px;
+  background-color: var(--bg-tertiary);
 }
 
 .sidebar-nav-btn svg {
@@ -316,10 +306,9 @@ button:focus-visible {
 }
 
 .sidebar-nav-text {
-  font-size: 13px;
-  font-weight: 450;
+  font-size: 14px;
   white-space: nowrap;
-  margin-left: 12px;
+  margin-left: 25px;
   opacity: 0;
   transition: opacity 150ms ease-out;
   transform: translateX(var(--text-shift));
@@ -417,46 +406,49 @@ button:focus-visible {
 }
 
 .history-date-header {
-  font-size: 11px;
-  font-weight: 500;
+  font-family: 'Helvetica', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
   color: var(--text-muted);
-  opacity: 0.8;
-  padding: 16px 20px 6px 20px;
-  text-transform: capitalize;
+  padding: 20px 16px 6px 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.85;
 }
 
 .history-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: calc(100% - 16px);
   margin: 2px 8px;
   padding: 8px 12px;
-  border-radius: 100px;
+  border-radius: 8px;
   background-color: transparent;
   border: none;
   cursor: pointer;
   transition: all var(--transition-fast);
   text-align: left;
   position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .history-item:hover {
-  background-color: #EFF0F2;
+  background-color: rgba(0, 0, 0, 0.03);
 }
 
 .history-item.active {
-  background-color: #E2E6EA;
+  background-color: rgba(0, 0, 0, 0.05);
   color: var(--text-primary);
+  font-weight: 500;
 }
 
 [data-theme="dark"] .history-item:hover {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.04);
 }
 
 [data-theme="dark"] .history-item.active {
-  background-color: rgba(255, 255, 255, 0.12);
+  background-color: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
+  font-weight: 500;
 }
 
 .history-dot {
@@ -464,8 +456,7 @@ button:focus-visible {
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-left: 6px;
-  margin-right: 18px;
+  margin-left: var(--dot-shift);
 }
 
 .history-item-inner {
@@ -476,8 +467,8 @@ button:focus-visible {
 }
 
 .history-item-title {
-  font-size: 13px;
-  font-weight: 450;
+  font-size: 15px;
+  font-weight: 400;
   color: #2F2F2F;
   white-space: nowrap;
   overflow: hidden;

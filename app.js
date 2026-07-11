@@ -20,20 +20,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const feelingInput = document.getElementById('feeling-input');
     const landingSubmit = document.querySelector('.search-submit');
     const chatSubmit = document.querySelector('.chat-submit-btn');
-    const quickSuggestions = document.getElementById('quick-suggestions');
 
     function updateSendButtonVisibility(inputEl, buttonEl) {
       if (!inputEl || !buttonEl) return;
       if (inputEl.value.trim().length > 0) {
         buttonEl.classList.add('visible');
-        if (inputEl === feelingInput && quickSuggestions) {
-          quickSuggestions.style.display = 'none';
-        }
       } else {
         buttonEl.classList.remove('visible');
-        if (inputEl === feelingInput && quickSuggestions) {
-          quickSuggestions.style.display = 'flex';
-        }
       }
     }
 
@@ -1218,7 +1211,11 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
         }
 
         const innerWrapper = document.createElement('div');
-        innerWrapper.classList.add('history-item-inner');
+        innerWrapper.style.display = 'flex';
+        innerWrapper.style.alignItems = 'center';
+        innerWrapper.style.gap = '8px';
+        innerWrapper.style.flex = '1';
+        innerWrapper.style.minWidth = '0';
 
         const dot = document.createElement('div');
         dot.classList.add('history-dot');
