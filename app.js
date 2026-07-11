@@ -884,7 +884,7 @@ document.addEventListener('DOMContentLoaded', () => {
       card.dataset.cardId = messageObj.timestamp;
 
       // displayDays for UI, dataDays for the JSON schema
-      const displayDays = ['Su', 'M', 'T', 'W', 'Th', 'F', 'Sa'];
+      const displayDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
       const dataDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
       const activeDays = cardData.days || [];
 
@@ -954,7 +954,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         <div class="action-card-days">
           ${displayDays.map((d, i) => {
-            const isActive = activeDays.includes(dataDays[i]) || activeDays.includes(d);
+            const isActive = activeDays.includes(dataDays[i]);
             return `<div class="action-card-day${isActive ? ' active' : ''}" data-index="${i}">${d}</div>`;
           }).join('')}
         </div>
@@ -1414,7 +1414,7 @@ MAPPING THE DAYS:
     const createdMidnight = new Date(taskCreatedDate.getFullYear(), taskCreatedDate.getMonth(), taskCreatedDate.getDate());
     if (compareDate < createdMidnight) return false;
 
-    const displayDays = ['Su', 'M', 'T', 'W', 'Th', 'F', 'Sa'];
+    const displayDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     const dataDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
     
     const dayOfWeekIndex = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
@@ -1774,7 +1774,7 @@ MAPPING THE DAYS:
         card.style.maxWidth = '100%';
         card.style.position = 'relative';
 
-        const displayDays = ['Su', 'M', 'T', 'W', 'Th', 'F', 'Sa'];
+        const displayDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
         const dataDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
         const activeDays = cardData.days || [];
         
@@ -1787,7 +1787,7 @@ MAPPING THE DAYS:
         startOfWeek.setDate(startOfWeek.getDate() - vtDayIndex);
 
         const daysHTML = displayDays.map((d, i) => {
-          const isActive = activeDays.includes(dataDays[i]) || activeDays.includes(d);
+          const isActive = activeDays.includes(dataDays[i]);
           
           // Get the actual date for this weekday index in the same week
           const loopDate = new Date(startOfWeek.getTime());
@@ -2228,7 +2228,7 @@ MAPPING THE DAYS:
     const activeDays = cardData.days || [];
     const why = cardData.why || '';
 
-    const displayDays = ['Su', 'M', 'T', 'W', 'Th', 'F', 'Sa'];
+    const displayDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     const dataDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
     const daysHTML = displayDays.map((d, i) => {
