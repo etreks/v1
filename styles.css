@@ -183,7 +183,7 @@ button:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  padding: 0 var(--sidebar-item-padding);
+  padding: 0;
   gap: 0px;
 }
 
@@ -263,18 +263,20 @@ button:focus-visible {
 .sidebar-nav-btn {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  width: calc(100% - 16px);
-  margin: 2px 8px;
-  padding: 8px 12px;
-  border-radius: 100px;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin: 4px auto;
+  border-radius: 50%;
   border: none;
   outline: none;
   background: transparent;
   color: var(--text-primary);
   cursor: pointer;
   overflow: hidden;
-  transition: background-color 150ms ease-out;
+  transition: background-color 150ms ease-out, border-radius 150ms ease-out, width 150ms ease-out, padding 150ms ease-out;
+  padding: 0;
+  flex-shrink: 0;
 }
 
 .sidebar-nav-btn:focus {
@@ -296,6 +298,15 @@ button:focus-visible {
 
 [data-theme="dark"] .sidebar-nav-btn.active {
   background-color: rgba(255, 255, 255, 0.12);
+}
+
+.sidebar.expanded .sidebar-nav-btn {
+  justify-content: flex-start;
+  width: calc(100% - 16px);
+  height: auto;
+  margin: 2px 8px;
+  padding: 8px 12px;
+  border-radius: 100px;
 }
 
 .sidebar-nav-btn svg {
