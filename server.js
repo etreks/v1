@@ -385,6 +385,9 @@ const server = http.createServer((req, res) => {
 
   // Normalize URL path and map root (and /app/*, /action) to index.html
   let filePath = (urlPath === '/' || urlPath.startsWith('/app/') || urlPath === '/action') ? '/index.html' : urlPath;
+  if (filePath === '/favicon.ico') {
+    filePath = '/logo.png';
+  }
   // Resolve absolute path in workspace
   const resolvedPath = path.join(__dirname, filePath);
 
