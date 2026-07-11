@@ -712,9 +712,15 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         currentUser = null;
         updateProfileUI(null);
+        
+        // Security: Clear local storage cache of authenticated session/tasks on logout
+        localStorage.removeItem('selahe_sessions');
+        localStorage.removeItem('selahe_tasks');
+        
         initLocalStorage();
         renderHistoryPanel();
         updateUsageUI();
+        startFresh(true); // Reset the active screen view to landing
       }
     });
   }
