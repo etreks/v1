@@ -1303,6 +1303,7 @@ RULES FOR THE CONVERSATIONAL RESPONSE:
 - Sentence 1: Acknowledge what the user said with a brief comment or reflection on their situation.
 - Sentence 2: Suggest a possible solution, strategy, or helpful tip for the problem they face (e.g., if they struggle with sleep or consistency, give a simple, direct hack).
 - Sentence 3 (optional): Ask AT MOST ONE direct question to get missing details (only if you don't have enough info to generate the action card yet).
+- If a Course of Action Card has already been generated in the history, DO NOT generate a new card unless the user specifically asks you to change, update, or recreate it. If they are just replying to your questions or clarifying, simply comment and support them without outputting the [ACTION_CARD_START] block again.
 - If the user has already told you what they want to do AND when — generate the Action Card immediately. Do not ask for more.
 - If the user expresses a clear intent ("I want to go to the gym tomorrow at 6PM") — that's enough. Make the card.
 - You are not diagnosing anyone. You are just converting intent into a structured commitment.
@@ -1333,9 +1334,15 @@ MAPPING THE DAYS:
 
     // Build the multi-turn conversation history for Gemini
     const historyParts = conversationHistory
-      .filter(m => m.sender === 'user' || (m.sender === 'ai' && m.text && !m.actionCardData))
+      .filter(m => m.sender === 'user' || (m.sender === 'ai' && m.text))
       .slice(-10) // last 10 messages for context
-      .map(m => ({ role: m.sender === 'user' ? 'user' : 'model', parts: [{ text: m.text }] }));
+      .map(m => {
+        let text = m.text || '';
+        if (m.sender === 'ai' && m.actionCardData) {
+          text += `\n[System Note: You generated a Course of Action Card here: ${JSON.stringify(m.actionCardData)}]`;
+        }
+        return { role: m.sender === 'user' ? 'user' : 'model', parts: [{ text }] };
+      });
 
     // Remove the last message (current prompt) since we send it separately
     if (historyParts.length > 0 && historyParts[historyParts.length - 1].role === 'user') {
