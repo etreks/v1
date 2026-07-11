@@ -382,6 +382,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Local Filesystem Syncing ---
   async function loadFromServer() {
+    if (supabase) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && session.user) {
+          console.log("Logged in user detected at startup. Skipping local server data load.");
+          handleRouting(true);
+          return;
+        }
+      } catch (err) {
+        console.warn("Could not check Supabase session at startup:", err);
+      }
+    }
+
     try {
       const resSess = await fetch('/api/sessions');
       if (resSess.ok) {
@@ -600,6 +613,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         chatSessions = newSessions;
         localStorage.setItem('selahe_sessions', JSON.stringify(chatSessions));
+        
+        // Refresh UI panel immediately
+        renderHistoryPanel();
+
+        // If the activeSessionId is not in the loaded user's sessions, clear screen
+        if (activeSessionId && !chatSessions[activeSessionId]) {
+          startFresh(true);
+        }
       }
 
       // 2. Fetch tasks
@@ -624,6 +645,11 @@ document.addEventListener('DOMContentLoaded', () => {
           return taskObj;
         });
         localStorage.setItem('selahe_tasks', JSON.stringify(taskList));
+
+        // Re-render logbook view if open
+        if (logbookState && logbookState.style.display === 'block') {
+          window.renderLogbook();
+        }
       }
 
       // Sync any tasks from local server extension cache to Supabase
