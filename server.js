@@ -5,6 +5,7 @@
  */
 
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
@@ -56,6 +57,52 @@ const server = http.createServer((req, res) => {
       req.on('data', chunk => { body += chunk.toString(); });
       req.on('end', () => { callback(body); });
     };
+
+    if (urlPath === '/api/chat' && req.method === 'POST') {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ error: 'Server is missing GEMINI_API_KEY environment variable.' }));
+        return;
+      }
+
+      const queryString = req.url.split('?')[1] || '';
+      const params = new URLSearchParams(queryString);
+      const model = params.get('model') || 'gemini-2.5-flash';
+
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+      getBody((body) => {
+        const geminiReq = https.request(geminiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }, (geminiRes) => {
+          res.statusCode = geminiRes.statusCode;
+          res.setHeader('Content-Type', 'application/json');
+          
+          geminiRes.on('data', (chunk) => {
+            res.write(chunk);
+          });
+          
+          geminiRes.on('end', () => {
+            res.end();
+          });
+        });
+
+        geminiReq.on('error', (err) => {
+          res.statusCode = 500;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ error: err.message }));
+        });
+
+        geminiReq.write(body);
+        geminiReq.end();
+      });
+      return;
+    }
 
     if (urlPath === '/api/sessions') {
       const filePath = path.join(DATA_DIR, 'sessions.json');

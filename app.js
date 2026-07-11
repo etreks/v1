@@ -1182,10 +1182,9 @@ document.addEventListener('DOMContentLoaded', () => {
     chatMessages.appendChild(typingIndicator);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
-    if (geminiApiKey.length > 0) {
-      callGeminiAPI(userText, typingIndicator, chatSessions[activeSessionId]?.messages || []);
-    } else {
-      // Fallback: simulated responses
+    // Always attempt to use Gemini (falls back to server-side proxy first, then simulated responses)
+    callGeminiAPI(userText, typingIndicator, chatSessions[activeSessionId]?.messages || [], () => {
+      // Fallback: simulated responses when no key is set anywhere
       const feeling = detectedFeeling || detectFeeling(userText);
       const databaseMatch = feelingDatabase[feeling] || feelingDatabase['default'];
 
@@ -1196,12 +1195,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const question = databaseMatch.probe || "Tell me more. What's the specific situation on your mind?";
         addMessageToActiveSession('ai', question, null, null);
       }, 1000);
-    }
+    });
   }
 
   // --- Gemini API Generation Call ---
-  async function callGeminiAPI(prompt, typingIndicator, conversationHistory = []) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`;
+  async function callGeminiAPI(prompt, typingIndicator, conversationHistory = [], fallbackCallback = null) {
+    let url;
+    let isProxy = false;
+
+    if (geminiApiKey && geminiApiKey.length > 0) {
+      url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`;
+    } else {
+      url = `/api/chat?model=${geminiModel}`;
+      isProxy = true;
+    }
 
     const systemPrompt = `You are Selahe — a fast, direct, unbiased reflection machine. Not a therapist. Not a friend. A tool that converts what the user says into a clear Course of Action.
 
@@ -1260,6 +1267,10 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
       });
 
       if (!response.ok) {
+        if (isProxy && fallbackCallback) {
+          fallbackCallback();
+          return;
+        }
         throw new Error(`Gemini API returned status code ${response.status}`);
       }
 
@@ -1289,6 +1300,10 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
 
     } catch (error) {
       console.error('Gemini API call failed:', error);
+      if (isProxy && fallbackCallback) {
+        fallbackCallback();
+        return;
+      }
       if (typingIndicator) typingIndicator.remove();
 
       let errMsg = `Apologies — couldn't reach the Gemini API. Check your API key in Settings. Error: ${error.message}`;
