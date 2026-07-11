@@ -1010,6 +1010,10 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
       toggleStatsBtn.classList.remove('active');
     }
 
+    if (mainHeaderTitle) {
+      mainHeaderTitle.style.display = 'none';
+    }
+
     if (openLogbookBtn) openLogbookBtn.classList.remove('active');
 
     const activeItems = historyListContainer.querySelectorAll('.history-item.active');
@@ -1274,10 +1278,11 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
       toggleStatsBtn.classList.remove('active');
     }
 
-    // Derive display title using the same priority as the sidebar
-    const actionMsg = session.messages.find(m => m.actionCardData);
     const displayTitle = session.actionTitle || (actionMsg && actionMsg.actionCardData && actionMsg.actionCardData.title) || session.title || 'Chat';
-    if (mainHeaderTitle) mainHeaderTitle.textContent = displayTitle;
+    if (mainHeaderTitle) {
+      mainHeaderTitle.textContent = displayTitle;
+      mainHeaderTitle.style.display = 'block';
+    }
 
     if (openLogbookBtn) openLogbookBtn.classList.remove('active');
 
