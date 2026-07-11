@@ -1996,6 +1996,26 @@ button:focus-visible {
   padding: 4px;
 }
 
+.why-toggle-btn {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  color: #373737 !important;
+  font-size: 13px !important;
+  font-weight: bold !important;
+  cursor: pointer !important;
+  text-decoration: underline !important;
+  font-family: inherit !important;
+  margin-left: 6px !important;
+  display: inline-block !important;
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+
+.why-toggle-btn:hover {
+  opacity: 1;
+}
+
 
 
 
