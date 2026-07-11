@@ -595,6 +595,10 @@ document.addEventListener('DOMContentLoaded', () => {
   async function syncDataFromSupabase() {
     if (!supabase || !currentUser) return;
     try {
+      // Back up local data in case Supabase is empty, so we can upload it instead of wiping it
+      const localSessions = JSON.parse(localStorage.getItem('selahe_sessions')) || {};
+      const localTasks = JSON.parse(localStorage.getItem('selahe_tasks')) || [];
+
       // 1. Fetch sessions
       const { data: dbSessions, error: sessErr } = await supabase
         .from('selahe_sessions')
@@ -611,8 +615,19 @@ document.addEventListener('DOMContentLoaded', () => {
             hasSavedCard: row.messages.some(m => m.actionCardData)
           };
         });
-        chatSessions = newSessions;
-        localStorage.setItem('selahe_sessions', JSON.stringify(chatSessions));
+
+        // Migrate local sessions if the cloud profile is empty
+        if (dbSessions.length === 0 && Object.keys(localSessions).length > 0) {
+          console.log("Supabase sessions empty. Syncing local sessions up to cloud database...");
+          chatSessions = localSessions;
+          localStorage.setItem('selahe_sessions', JSON.stringify(chatSessions));
+          for (const sid of Object.keys(chatSessions)) {
+            await saveSessionToSupabase(sid, chatSessions[sid]);
+          }
+        } else {
+          chatSessions = newSessions;
+          localStorage.setItem('selahe_sessions', JSON.stringify(chatSessions));
+        }
         
         // Refresh UI panel immediately
         renderHistoryPanel();
@@ -630,7 +645,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .eq('user_id', currentUser.id);
 
       if (!taskErr && dbTasks) {
-        taskList = dbTasks.map(row => {
+        const dbTasksMapped = dbTasks.map(row => {
           let taskObj;
           try {
             taskObj = JSON.parse(row.text);
@@ -644,7 +659,19 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           return taskObj;
         });
-        localStorage.setItem('selahe_tasks', JSON.stringify(taskList));
+
+        // Migrate local tasks if the cloud profile is empty
+        if (dbTasks.length === 0 && localTasks.length > 0) {
+          console.log("Supabase tasks empty. Syncing local tasks up to cloud database...");
+          taskList = localTasks;
+          localStorage.setItem('selahe_tasks', JSON.stringify(taskList));
+          for (const t of taskList) {
+            await saveTaskToSupabase(t);
+          }
+        } else {
+          taskList = dbTasksMapped;
+          localStorage.setItem('selahe_tasks', JSON.stringify(taskList));
+        }
 
         // Re-render logbook view if open
         if (logbookState && logbookState.style.display === 'block') {
