@@ -59,19 +59,113 @@ const server = http.createServer((req, res) => {
     };
 
     if (urlPath === '/api/chat' && req.method === 'POST') {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
+      const groqKey = process.env.GROQ_API_KEY;
+      const geminiKey = process.env.GEMINI_API_KEY;
+
+      if (!groqKey && !geminiKey) {
         res.statusCode = 500;
         res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ error: 'Server is missing GEMINI_API_KEY environment variable.' }));
+        res.end(JSON.stringify({ error: 'Server is missing API keys (GEMINI_API_KEY or GROQ_API_KEY) in environment.' }));
         return;
       }
 
+      if (groqKey) {
+        // Groq API Mode (Llama 3.1 70B)
+        getBody((body) => {
+          let payload;
+          try {
+            payload = JSON.parse(body);
+          } catch (e) {
+            res.statusCode = 400;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: 'Invalid JSON' }));
+            return;
+          }
+
+          const systemInstructionText = payload.system_instruction?.parts?.[0]?.text || '';
+          const messages = [];
+
+          if (systemInstructionText) {
+            messages.push({ role: 'system', content: systemInstructionText });
+          }
+
+          if (Array.isArray(payload.contents)) {
+            payload.contents.forEach(item => {
+              const role = item.role === 'model' ? 'assistant' : 'user';
+              const text = item.parts?.[0]?.text || '';
+              messages.push({ role, content: text });
+            });
+          }
+
+          const groqPayload = {
+            model: 'llama-3.1-70b-versatile',
+            messages: messages,
+            temperature: 0.1
+          };
+
+          const groqReq = https.request('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${groqKey}`
+            }
+          }, (groqRes) => {
+            let resData = '';
+            groqRes.on('data', (chunk) => { resData += chunk.toString(); });
+            groqRes.on('end', () => {
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = groqRes.statusCode;
+              if (groqRes.statusCode === 200) {
+                try {
+                  const data = JSON.parse(resData);
+                  const aiText = data.choices[0].message.content;
+                  
+                  const geminiResponse = {
+                    candidates: [
+                      {
+                        content: {
+                          parts: [
+                            {
+                              text: aiText
+                            }
+                          ]
+                        }
+                      }
+                    ],
+                    usageMetadata: {
+                      promptTokenCount: data.usage?.prompt_tokens || 0,
+                      candidatesTokenCount: data.usage?.completion_tokens || 0
+                    }
+                  };
+                  res.end(JSON.stringify(geminiResponse));
+                } catch (jsonErr) {
+                  res.statusCode = 500;
+                  res.end(JSON.stringify({ error: 'Failed to parse Groq response' }));
+                }
+              } else {
+                res.end(resData);
+              }
+            });
+          });
+
+          groqReq.on('error', (err) => {
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: err.message }));
+          });
+
+          groqReq.write(JSON.stringify(groqPayload));
+          groqReq.end();
+        });
+        return;
+      }
+
+      // Fallback: Gemini API Mode
       const queryString = req.url.split('?')[1] || '';
       const params = new URLSearchParams(queryString);
       const model = params.get('model') || 'gemini-2.5-flash';
 
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
 
       getBody((body) => {
         const geminiReq = https.request(geminiUrl, {
