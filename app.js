@@ -97,6 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Settings Modal Elements ---
   const settingsModal = document.getElementById('settings-modal');
   const closeSettingsModalBtn = document.getElementById('close-settings-modal');
+  const openSettingsBtn = document.getElementById('open-settings-btn');
 
   const geminiApiKeyInput = document.getElementById('gemini-api-key');
   const geminiModelSelect = document.getElementById('gemini-model-select');
@@ -279,6 +280,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // Add task listener removed
 
   // --- Settings Modal Trigger ---
+  if (openSettingsBtn) {
+    openSettingsBtn.addEventListener('click', () => {
+      if (settingsModal) {
+        settingsModal.style.display = 'flex';
+      }
+    });
+  }
+
   closeSettingsModalBtn.addEventListener('click', () => {
     settingsModal.style.display = 'none';
   });
