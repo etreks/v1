@@ -695,36 +695,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
           editBtn.title = 'Save changes';
         } else {
-          // Save & lock
-          const oldCopy = { ...cardData };
-          delete oldCopy.history; // Avoid circular reference nesting
+          // Extract new values from DOM
+          const newTitle = card.querySelector('.action-card-title').textContent.trim();
+          const newTimeStart = card.querySelector('[data-field="timeStart"]')?.textContent.trim() || '';
+          const newTimeStartAmPm = card.querySelector('[data-field="timeStartAmPm"]')?.textContent.trim() || '';
+          const newTimeEnd = card.querySelector('[data-field="timeEnd"]')?.textContent.trim() || '';
+          const newTimeEndAmPm = card.querySelector('[data-field="timeEndAmPm"]')?.textContent.trim() || '';
+          const newLocation = card.querySelector('[data-field="location"]')?.textContent.trim() || '';
+          const newWhy = card.querySelector('.action-card-why-text').textContent.trim();
 
+          const hasChanges = 
+            newTitle !== oldCopy.title ||
+            newTimeStart !== oldCopy.timeStart ||
+            newTimeStartAmPm !== oldCopy.timeStartAmPm ||
+            newTimeEnd !== oldCopy.timeEnd ||
+            newTimeEndAmPm !== oldCopy.timeEndAmPm ||
+            newLocation !== oldCopy.location ||
+            newWhy !== oldCopy.why;
+
+          const daysChanged = JSON.stringify(cardData.days || []) !== JSON.stringify(oldCopy.days || []);
+          const isChanged = hasChanges || daysChanged;
+
+          // Lock elements
           card.querySelectorAll('.action-card-time-pill, .action-card-location').forEach(el => {
             el.contentEditable = 'false';
-            const field = el.dataset.field;
-            if (field) cardData[field] = el.textContent.trim();
           });
-          const whyEl = card.querySelector('.action-card-why-text');
-          whyEl.contentEditable = 'false';
-          cardData.why = whyEl.textContent.trim();
-          
-          const newTitle = card.querySelector('.action-card-title').textContent.trim();
-          cardData.title = newTitle;
+          card.querySelector('.action-card-why-text').contentEditable = 'false';
           card.querySelector('.action-card-title').contentEditable = 'false';
 
-          // Initialize history tracking if missing
-          if (!cardData.history) cardData.history = [];
-          const lastEditTime = cardData.lastEditTime || messageObj.timestamp;
-          
-          // Push previous version snapshot to history
-          cardData.history.push({
-            cardData: oldCopy,
-            dateRange: {
-              start: lastEditTime,
-              end: Date.now()
-            }
-          });
-          cardData.lastEditTime = Date.now();
+          // Update dataset
+          cardData.title = newTitle;
+          cardData.timeStart = newTimeStart;
+          cardData.timeStartAmPm = newTimeStartAmPm;
+          cardData.timeEnd = newTimeEnd;
+          cardData.timeEndAmPm = newTimeEndAmPm;
+          cardData.location = newLocation;
+          cardData.why = newWhy;
+
+          if (isChanged) {
+            if (!cardData.history) cardData.history = [];
+            const lastEditTime = cardData.lastEditTime || messageObj.timestamp;
+            cardData.history.push({
+              cardData: oldCopy,
+              dateRange: {
+                start: lastEditTime,
+                end: Date.now()
+              }
+            });
+            cardData.lastEditTime = Date.now();
+          }
 
           // Sync title changes directly to active session object and header
           if (activeSessionId && chatSessions[activeSessionId]) {
@@ -1762,8 +1781,36 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
       });
     }
 
-    // 3. Render Timeline Items
+    // 3. De-duplicate/merge consecutive history items that have identical card configurations
+    const deduplicated = [];
     historyList.forEach(item => {
+      if (deduplicated.length === 0) {
+        deduplicated.push(item);
+        return;
+      }
+      
+      const prev = deduplicated[deduplicated.length - 1];
+      const isDuplicate = 
+        item.cardData.title === prev.cardData.title &&
+        item.cardData.timeStart === prev.cardData.timeStart &&
+        item.cardData.timeStartAmPm === prev.cardData.timeStartAmPm &&
+        item.cardData.timeEnd === prev.cardData.timeEnd &&
+        item.cardData.timeEndAmPm === prev.cardData.timeEndAmPm &&
+        item.cardData.location === prev.cardData.location &&
+        item.cardData.why === prev.cardData.why &&
+        JSON.stringify(item.cardData.days || []) === JSON.stringify(prev.cardData.days || []);
+
+      if (isDuplicate) {
+        // Merge date ranges (keep the widest boundaries)
+        prev.activeRange.start = Math.min(prev.activeRange.start, item.activeRange.start);
+        prev.activeRange.end = Math.max(prev.activeRange.end, item.activeRange.end);
+      } else {
+        deduplicated.push(item);
+      }
+    });
+
+    // 4. Render Timeline Items
+    deduplicated.forEach(item => {
       const itemEl = document.createElement('div');
       itemEl.classList.add('timeline-item');
 
