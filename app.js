@@ -17,7 +17,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const logbookState = document.getElementById('logbook-state');
   const logbookContent = document.getElementById('logbook-content');
   const landingForm = document.getElementById('landing-form');
-  const feelingInput = document.getElementById('feeling-input');
+    const feelingInput = document.getElementById('feeling-input');
+    const landingSubmit = document.querySelector('.search-submit');
+    const chatSubmit = document.querySelector('.chat-submit-btn');
+
+    function updateSendButtonVisibility(inputEl, buttonEl) {
+      if (!inputEl || !buttonEl) return;
+      if (inputEl.value.trim().length > 0) {
+        buttonEl.classList.add('visible');
+      } else {
+        buttonEl.classList.remove('visible');
+      }
+    }
 
   const toggleStatsBtn = document.getElementById('toggle-stats-btn');
   const statsState = document.getElementById('stats-state');
@@ -209,6 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const text = feelingInput.value.trim();
     if (!text) return;
     feelingInput.value = '';
+    updateSendButtonVisibility(feelingInput, landingSubmit);
     startChatWithFeeling(text);
   });
 
@@ -217,10 +229,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const text = chatInputField.value.trim();
     if (!text) return;
     chatInputField.value = '';
+    updateSendButtonVisibility(chatInputField, chatSubmit);
 
     addMessageToActiveSession('user', text);
     handleAIResponse(text);
   });
+
+  // Bind input visibility togglers
+  if (feelingInput && landingSubmit) {
+    feelingInput.addEventListener('input', () => updateSendButtonVisibility(feelingInput, landingSubmit));
+  }
+  if (chatInputField && chatSubmit) {
+    chatInputField.addEventListener('input', () => updateSendButtonVisibility(chatInputField, chatSubmit));
+  }
 
   // Add task listener removed
 
@@ -1023,6 +1044,7 @@ IMPORTANT: Always use 12-hour format for timeStart and timeEnd (e.g. "06:00", "0
     if (statsState) statsState.style.display = 'none';
     landingState.style.display = 'flex';
     feelingInput.value = '';
+    updateSendButtonVisibility(feelingInput, landingSubmit);
 
     if (toggleStatsBtn) {
       toggleStatsBtn.style.display = 'none';

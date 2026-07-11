@@ -835,10 +835,19 @@ button:focus-visible {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: transform var(--transition-fast), background-color var(--transition-fast);
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
+  transition: opacity 0.15s ease, transform 0.15s ease, background-color 0.15s ease;
 }
 
-.search-submit:hover {
+.search-submit.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.search-submit.visible:hover {
   transform: scale(1.05);
   background-color: #DFDFDF;
 }
@@ -1073,10 +1082,19 @@ button:focus-visible {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
+  transition: opacity 0.15s ease, transform 0.15s ease, background-color 0.15s ease;
 }
 
-.chat-submit-btn:hover {
+.chat-submit-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.chat-submit-btn.visible:hover {
   transform: scale(1.05);
   background-color: #DFDFDF;
 }
