@@ -44,12 +44,14 @@
   /* Aligns Logo, Action Logbook, Search, and Chat Items */
   --sidebar-date-padding: 10px;
   /* Aligns Dates */
-  --text-shift: 0px;
+  --text-shift: -12px;
   /* Move all text left (negative) or right (positive) */
   --logo-shift: -2px;
   /* Move just the sunburst logo */
   --dot-shift: 3px;
   /* Move just the yellow chat dots */
+  --dot-size: 8px;
+  /* Size of the status indicator circles next to chat names */
   --panel-width: 250px;
   --max-content-width: 860px;
 }
@@ -452,8 +454,8 @@ button:focus-visible {
 }
 
 .history-dot {
-  width: 8px;
-  height: 8px;
+  width: var(--dot-size);
+  height: var(--dot-size);
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -2127,7 +2129,7 @@ button:focus-visible {
   font-weight: 600;
   color: #555;
   text-decoration: none;
-  background: rgba(0,0,0,0.07);
+  background: rgba(0, 0, 0, 0.07);
   padding: 2px 7px;
   border-radius: 4px;
   flex-shrink: 0;
@@ -2138,7 +2140,7 @@ button:focus-visible {
 }
 
 .gemini-origin-link:hover {
-  background: rgba(0,0,0,0.14);
+  background: rgba(0, 0, 0, 0.14);
   color: #111;
 }
 
@@ -2255,7 +2257,8 @@ button:focus-visible {
 .month-block {
   min-width: calc(33.333% - 14px);
   max-width: calc(33.333% - 14px);
-  background-color: #FDF18C; /* Sleek yellow card theme background */
+  background-color: #FDF18C;
+  /* Sleek yellow card theme background */
   border-radius: 12px;
   padding: 16px;
   box-shadow: var(--shadow-sm);
@@ -2426,7 +2429,8 @@ button:focus-visible {
 }
 
 .timeline-item:first-child .timeline-marker {
-  background-color: #1882FF; /* Highlight the latest active one */
+  background-color: #1882FF;
+  /* Highlight the latest active one */
 }
 
 .timeline-item:last-child .timeline-marker {
