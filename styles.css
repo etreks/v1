@@ -148,6 +148,7 @@ button:focus-visible {
   padding: 0 var(--sidebar-item-padding);
   justify-content: flex-start;
   flex-shrink: 0;
+  gap: 14px;
 }
 
 .sidebar.expanded .sidebar-top {
