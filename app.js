@@ -20,13 +20,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const feelingInput = document.getElementById('feeling-input');
     const landingSubmit = document.querySelector('.search-submit');
     const chatSubmit = document.querySelector('.chat-submit-btn');
+    const quickSuggestions = document.getElementById('quick-suggestions');
 
     function updateSendButtonVisibility(inputEl, buttonEl) {
       if (!inputEl || !buttonEl) return;
       if (inputEl.value.trim().length > 0) {
         buttonEl.classList.add('visible');
+        if (inputEl === feelingInput && quickSuggestions) {
+          quickSuggestions.style.display = 'none';
+        }
       } else {
         buttonEl.classList.remove('visible');
+        if (inputEl === feelingInput && quickSuggestions) {
+          quickSuggestions.style.display = 'flex';
+        }
       }
     }
 
