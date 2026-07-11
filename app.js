@@ -277,30 +277,19 @@ document.addEventListener('DOMContentLoaded', () => {
     chatSessions = JSON.parse(localStorage.getItem('selahe_sessions')) || {};
     taskList = JSON.parse(localStorage.getItem('selahe_tasks')) || [];
 
-    // Clean up orphaned tasks and migrate legacy tasks
-    const initialTaskCount = taskList.length;
-    taskList = taskList.filter(task => {
-      // If the task has a sessionId, keep it only if the chat session still exists
-      if (task.sessionId) {
-        return !!chatSessions[task.sessionId];
-      }
-      // If it doesn't have a sessionId, check if we can migrate/link it to an existing chat
-      if (task.cardData && task.cardData.title) {
+    // Migrate legacy tasks without deleting orphaned ones synchronously on load (to avoid race conditions with loadFromServer)
+    taskList.forEach(task => {
+      if (!task.sessionId && task.cardData && task.cardData.title) {
         const matchingSessionId = Object.keys(chatSessions).find(id => {
           return chatSessions[id].actionTitle === task.cardData.title || chatSessions[id].title === task.cardData.title;
         });
         if (matchingSessionId) {
           task.sessionId = matchingSessionId;
-          return true; // Keep and update with the link
         }
       }
-      // If it has no sessionId and cannot be matched to any current chat, it was orphaned -> delete it!
-      return false;
     });
 
-    if (taskList.length !== initialTaskCount) {
-      localStorage.setItem('selahe_tasks', JSON.stringify(taskList));
-    }
+    localStorage.setItem('selahe_tasks', JSON.stringify(taskList));
 
     // Load API Key from local storage or default to empty
     geminiApiKey = localStorage.getItem('selahe_gemini_api_key') || '';
@@ -337,12 +326,77 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data && Object.keys(data).length > 0) {
           chatSessions = data;
           localStorage.setItem('selahe_sessions', JSON.stringify(chatSessions));
+
+          // --- Task Self-Healing / Auto-Restore Logic ---
+          let savedTasks = JSON.parse(localStorage.getItem('selahe_tasks')) || [];
+          let hasRestored = false;
+
+          Object.keys(chatSessions).forEach(sid => {
+            const session = chatSessions[sid];
+            if (!session.hasSavedCard) return;
+
+            const taskExists = savedTasks.some(t => t.sessionId === sid);
+            if (!taskExists) {
+              const actionMsg = session.messages.find(m => m.actionCardData);
+              if (actionMsg && actionMsg.actionCardData) {
+                const cardData = actionMsg.actionCardData;
+                const title = cardData.title || session.title || 'Task';
+                const timeStart = cardData.timeStart || '';
+                const timeStartAmPm = cardData.timeStartAmPm || '';
+                const timeEnd = cardData.timeEnd || '';
+                const timeEndAmPm = cardData.timeEndAmPm || '';
+                const location = cardData.location || '';
+                const taskText = `${title} (${timeStart}${timeStartAmPm} - ${timeEnd}${timeEndAmPm} • ${location})`;
+
+                // Reconstruct completions from messages text
+                const completions = [];
+                session.messages.forEach(msg => {
+                  if (msg.text && msg.text.includes('**Done task on')) {
+                    const match = msg.text.match(/\*\*Done task on (\d+) ([a-zA-Z]+)/);
+                    if (match) {
+                      const day = parseInt(match[1]);
+                      const monthName = match[2];
+                      const monthsMap = {
+                        'January': 0, 'February': 1, 'March': 2, 'April': 3, 'May': 4, 'June': 5,
+                        'July': 6, 'August': 7, 'September': 8, 'October': 9, 'November': 10, 'December': 11
+                      };
+                      const month = monthsMap[monthName];
+                      if (month !== undefined) {
+                        const d = new Date(2026, month, day);
+                        completions.push(dateToDateString(d));
+                      }
+                    }
+                  }
+                });
+
+                // Fallback to active date if empty
+                if (completions.length === 0 && cardData.status === 'completed') {
+                  const sessionTime = parseInt(session.id.split('_')[1]) || Date.now();
+                  completions.push(dateToDateString(new Date(sessionTime)));
+                }
+
+                savedTasks.push({
+                  id: 'task_' + (session.id.split('_')[1] || Date.now()),
+                  text: taskText,
+                  cardData: cardData,
+                  date: parseInt(session.id.split('_')[1]) || Date.now(),
+                  sessionId: sid,
+                  cardId: actionMsg.timestamp,
+                  completions: completions
+                });
+                hasRestored = true;
+              }
+            }
+          });
+
+          if (hasRestored) {
+            localStorage.setItem('selahe_tasks', JSON.stringify(savedTasks));
+          }
+
           renderHistoryPanel();
         }
       }
       handleRouting(true); // Handle initial route load based on URL
-
-      // 2. Fetch Tasks list from local server file (removed)
 
       // Update sync badge to reflect server communication is active
       syncStatusBadge.textContent = "v1/data (Connected)";
