@@ -50,7 +50,7 @@
   /* Move just the sunburst logo */
   --dot-shift: 3px;
   /* Move just the yellow chat dots */
-  --dot-size: 8px;
+  --dot-size: 13px;
   /* Size of the status indicator circles next to chat names */
   --panel-width: 250px;
   --max-content-width: 860px;
@@ -2452,4 +2452,141 @@ button:focus-visible {
 .timeline-calendar-col .month-block {
   min-width: 300px;
   max-width: 300px;
+}
+
+/* User Profile Bottom Sidebar Styles */
+.sidebar-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 0 var(--sidebar-item-padding) 20px var(--sidebar-item-padding);
+  box-sizing: border-box;
+}
+
+.user-profile-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 9px;
+  border-radius: 8px;
+  box-sizing: border-box;
+  background-color: transparent;
+  transition: background-color var(--transition-fast);
+  min-height: 48px;
+}
+
+.google-login-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  gap: 10px;
+}
+
+.google-login-btn:hover {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-focus);
+}
+
+.google-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.login-btn-text {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  display: none;
+}
+
+.sidebar.expanded .login-btn-text {
+  display: inline;
+}
+
+.user-avatar-wrapper {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-info-text {
+  display: none;
+  flex-direction: column;
+  margin-left: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar.expanded .user-info-text {
+  display: flex;
+}
+
+.user-display-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-email {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logout-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+  margin-left: 8px;
+}
+
+.sidebar.expanded .logout-btn {
+  display: flex;
+}
+
+.logout-btn:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+}
+
+.logout-btn svg {
+  width: 16px;
+  height: 16px;
 }
